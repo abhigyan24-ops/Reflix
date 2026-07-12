@@ -1,0 +1,36 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // User profile documents: Read/write only allowed by the owner user
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Dispensers: Read by everyone, write locked to Cloud Functions service account (Client side write locked)
+    match /dispensers/{machineId} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+    
+    // Transactions: Read only by the owner user, write locked to Cloud Functions service account
+    match /transactions/{txnId} {
+      allow read: if request.auth != null && resource.data.uid == request.auth.uid;
+      allow write: if false;
+    }
+    
+    // QR Tokens: Owner user can write to create, read to verify. Lock prevents unauthorized modifications.
+    match /qrTokens/{nonce} {
+      allow read: if request.auth != null && resource.data.uid == request.auth.uid;
+      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
+      allow update, delete: if false;
+    }
+    
+    // Forecasts: Read by anyone, write locked to AI sync/admin
+    match /forecasts/{machineId} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+  }
+}

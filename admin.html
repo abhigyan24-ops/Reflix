@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RefillX Admin Portal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root { --bg: #060f09; --green-bright: #3ecf7a; --green-accent: #2d9e5f; --panel: rgba(10, 23, 14, 0.8); }
+    body { font-family: 'DM Sans', sans-serif; background-color: var(--bg); color: #fff; margin: 0; padding: 0; display: flex; height: 100vh; overflow: hidden; }
+    
+    .sidebar { width: 260px; background: #000; border-right: 1px solid #222; display: flex; flex-direction: column; padding: 1.5rem; }
+    .nav-item { padding: 1rem; border-radius: 0.8rem; color: #888; cursor: pointer; transition: 0.2s; font-weight: bold; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.8rem; }
+    .nav-item:hover { background: rgba(255,255,255,0.05); color: #fff; }
+    .nav-item.active { background: var(--green-accent); color: #000; }
+    
+    .main-content { flex: 1; padding: 2.5rem; overflow-y: auto; background: radial-gradient(circle at top right, #112a1a 0%, var(--bg) 100%); }
+    .page { display: none; animation: fadeIn 0.3s; }
+    .page.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    
+    .card { background: var(--panel); border: 1px solid rgba(62,207,122,0.1); border-radius: 1.5rem; padding: 1.5rem; backdrop-filter: blur(10px); }
+    .stat-val { font-size: 2.5rem; font-weight: 900; color: var(--green-bright); font-family: monospace; }
+    
+    .tank-visual { width: 80px; height: 150px; background: #000; border: 4px solid #333; border-radius: 10px 10px 4px 4px; position: relative; overflow: hidden; margin: 0 auto; }
+    .tank-fill { position: absolute; bottom: 0; width: 100%; transition: height 0.5s, background 0.5s; }
+    
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 1rem; text-align: left; border-bottom: 1px solid #222; }
+    th { color: #888; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; }
+    
+    .btn { background: var(--green-bright); color: #000; padding: 0.8rem 1.5rem; border-radius: 0.8rem; font-weight: bold; cursor: pointer; border: none; transition: 0.2s; }
+    .btn:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(62,207,122,0.3); }
+    .btn-red { background: #ff4d4d; color: #fff; }
+    .btn-outline { background: transparent; border: 1px solid var(--green-bright); color: var(--green-bright); }
+    .btn-outline:hover { background: var(--green-bright); color: #000; }
+    
+    input, select { background: #111; border: 1px solid #333; color: #fff; padding: 0.8rem; border-radius: 0.5rem; width: 100%; font-family: inherit; }
+
+    /* Health Monitor specific */
+    .gauge-svg { width: 200px; height: 200px; transform: rotate(-90deg); }
+    .gauge-circle { fill: none; stroke-width: 12; stroke-linecap: round; }
+    .gauge-bg { stroke: #222; }
+    .gauge-value { stroke: #3ecf7a; transition: stroke-dasharray 0.5s ease, stroke 0.5s ease; }
+    
+    .sensor-card { background: rgba(20, 20, 20, 0.6); backdrop-filter: blur(8px); border: 1px solid #333; border-radius: 1rem; padding: 1rem; position: relative; overflow: hidden; transition: 0.3s; }
+    .sensor-card.error { border-color: #ff4d4d; animation: pulseRed 2s infinite; }
+    @keyframes pulseRed { 0% { box-shadow: 0 0 0 0 rgba(255, 77, 77, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(255, 77, 77, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 77, 77, 0); } }
+    
+    .sparkline { width: 100%; height: 40px; margin-top: 10px; }
+    
+    /* Connection Banner */
+    #connection-banner { display: none; position: fixed; top: 0; left: 0; width: 100%; background: #f0b429; color: #000; text-align: center; font-weight: bold; padding: 0.5rem; z-index: 9999; }
+  </style>
+</head>
+<body>
+  <div id="connection-banner">Offline mode — using cached data</div>
+
+  <!-- Sidebar -->
+  <div class="sidebar mt-6">
+    <div class="text-3xl font-black text-[#3ecf7a] mb-10 tracking-tight">RefillX<span class="text-white">Admin</span></div>
+    
+    <div class="nav-item active" onclick="switchPage('dashboard')">📊 Dashboard</div>
+    <div class="nav-item relative" onclick="switchPage('health')">🔴 Health Monitor <span id="alert-badge" class="hidden absolute top-2 right-2 bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full">0</span></div>
+    <div class="nav-item" onclick="switchPage('inventory')">💧 Inventory</div>
+    <div class="nav-item" onclick="switchPage('orders')">📦 Supplier Orders</div>
+    <div class="nav-item" onclick="switchPage('analytics')">📈 Analytics</div>
+    <div class="nav-item mt-auto" onclick="switchPage('settings')">⚙️ Settings</div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <div class="flex justify-between items-center mb-8">
+      <h1 class="text-4xl font-black" id="page-title">Dashboard</h1>
+      <div class="flex items-center gap-4">
+        <span id="conn-badge" class="text-sm font-mono px-3 py-1 rounded-full border">Checking...</span>
+        <div class="text-gray-400" id="clock">--:--:--</div>
+      </div>
+    </div>
+
+    <!-- Page 1: Dashboard -->
+    <div id="page-dashboard" class="page active">
+      <div class="grid grid-cols-4 gap-6 mb-8">
+        <div class="card"><div class="text-gray-400 text-sm font-bold uppercase mb-2">Total Revenue</div><div class="stat-val" id="d-rev">₹0</div></div>
+        <div class="card"><div class="text-gray-400 text-sm font-bold uppercase mb-2">Total Sessions</div><div class="stat-val text-white" id="d-sessions">0</div></div>
+        <div class="card"><div class="text-gray-400 text-sm font-bold uppercase mb-2">Plastic Saved (Bottles)</div><div class="stat-val" id="d-plastic">0</div></div>
+        <div class="card"><div class="text-gray-400 text-sm font-bold uppercase mb-2">Avg Session Time</div><div class="stat-val text-white" id="d-avg-time">0s</div></div>
+      </div>
+      
+      <div class="grid grid-cols-3 gap-6">
+        <div class="card col-span-2">
+          <h2 class="text-xl font-bold mb-4 text-[#86efac]">Revenue Trend (Last 7 Days)</h2>
+          <svg width="100%" height="200" style="background:#000; border-radius:10px;">
+            <polyline id="rev-chart" fill="none" stroke="#3ecf7a" stroke-width="4" points="" />
+          </svg>
+        </div>
+        <div class="card overflow-y-auto" style="max-height: 300px;">
+          <h2 class="text-xl font-bold mb-4 text-[#86efac]">Recent Activity</h2>
+          <div id="d-recent-activity"></div>
+        </div>
+      </div>
+      
+      <div class="grid grid-cols-2 gap-6 mt-6">
+        <div class="card">
+          <h2 class="text-xl font-bold mb-4 text-[#86efac]">Comparative Analytics (This vs Last Week)</h2>
+          <div id="comparative-stats" class="flex flex-col gap-4"></div>
+        </div>
+        <div class="card">
+          <h2 class="text-xl font-bold mb-4 text-[#86efac]">Predictive Restock Alerts</h2>
+          <div id="restock-predictor-content" class="flex flex-col gap-2"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Page: Health Monitor -->
+    <div id="page-health" class="page">
+      <!-- Section 1: Health Score -->
+      <div class="card mb-6 flex items-center justify-between">
+        <div class="flex items-center gap-8">
+          <div class="relative w-[200px] h-[200px]">
+            <svg class="gauge-svg" viewBox="0 0 100 100">
+              <circle class="gauge-circle gauge-bg" cx="50" cy="50" r="40" />
+              <circle id="health-gauge" class="gauge-circle gauge-value" cx="50" cy="50" r="40" stroke-dasharray="0 251.2" />
+            </svg>
+            <div class="absolute inset-0 flex flex-col items-center justify-center">
+              <span id="health-score-val" class="text-4xl font-black">100</span>
+            </div>
+          </div>
+          <div>
+            <h2 class="text-3xl font-black mb-1" id="health-score-label">Excellent</h2>
+            <p class="text-gray-400">Station RFX-001 Overall Health</p>
+          </div>
+        </div>
+        <div class="flex gap-6">
+          <div class="bg-[#111] p-4 rounded-xl border border-[#333] text-center min-w-[120px]">
+            <div class="text-gray-500 text-xs font-bold uppercase">Uptime</div>
+            <div class="text-2xl font-mono mt-1" id="health-uptime">100%</div>
+          </div>
+          <div class="bg-[#111] p-4 rounded-xl border border-[#333] text-center min-w-[120px]">
+            <div class="text-gray-500 text-xs font-bold uppercase">Last Ping</div>
+            <div class="text-2xl font-mono mt-1" id="health-ping">0s</div>
+          </div>
+          <div class="bg-[#111] p-4 rounded-xl border border-[#333] text-center min-w-[120px]">
+            <div class="text-gray-500 text-xs font-bold uppercase">Active Alerts</div>
+            <div class="text-2xl font-mono mt-1 text-[#f0b429]" id="health-alerts-count">0</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 2: Sensors -->
+      <h2 class="text-xl font-bold mb-4 text-[#86efac]">Hardware Sensors</h2>
+      <div class="grid grid-cols-5 gap-4 mb-6" id="sensors-grid">
+        <!-- Sensor cards injected dynamically -->
+      </div>
+
+      <!-- Section 3: Alert Feed & Sim -->
+      <div class="grid grid-cols-3 gap-6">
+        <div class="card col-span-2">
+          <div class="flex justify-between mb-4">
+             <h2 class="text-xl font-bold text-[#86efac]">Alert Feed</h2>
+             <button class="text-xs text-gray-400 hover:text-white" onclick="clearAlerts()">Clear All</button>
+          </div>
+          <div id="alert-feed" class="flex flex-col gap-2 max-h-[300px] overflow-y-auto">
+             <!-- Alerts go here -->
+          </div>
+        </div>
+        
+        <div class="card bg-[#1a0f0f] border-red-900/30">
+          <h2 class="text-xl font-bold mb-4 text-red-400">Simulate Hardware Events</h2>
+          <div class="flex flex-col gap-3">
+             <select id="sim-sensor" class="bg-black">
+               <option value="ultrasonic">Ultrasonic (HC-SR04)</option>
+               <option value="flowSensor">Flow Sensor (YF-S201)</option>
+               <option value="temperature">Temperature (DS18B20)</option>
+               <option value="tds">TDS Sensor</option>
+               <option value="qrScanner">QR Scanner (OV2640)</option>
+             </select>
+             <button class="btn btn-red w-full" onclick="simError()">Simulate Sensor Error</button>
+             <button class="btn btn-outline border-yellow-500 text-yellow-500 hover:bg-yellow-500 w-full" onclick="simOffline()">Simulate Station Offline</button>
+             <button class="btn btn-outline w-full" onclick="simScoreDrop()">Simulate Score Drop</button>
+             <button class="btn w-full mt-4" onclick="restoreAll()">Restore All Sensors</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Page 2: Inventory -->
+    <div id="page-inventory" class="page">
+      <div class="grid grid-cols-5 gap-6 mb-8" id="inv-tanks-container"></div>
+      <div class="card">
+        <h2 class="text-xl font-bold mb-4">Inventory Alerts</h2>
+        <div id="inv-alerts" class="text-red-400 font-bold">All systems nominal.</div>
+      </div>
+    </div>
+
+    <!-- Page 3: Supplier Orders -->
+    <div id="page-orders" class="page">
+      <div class="grid grid-cols-3 gap-6">
+        <div class="card col-span-1">
+          <h2 class="text-xl font-bold mb-4 text-[#3ecf7a]">Place Order</h2>
+          <select id="so-product" class="mb-4"><option value="water">RO Water</option><option value="shampoo">Shampoo</option><option value="detergent">Liquid Detergent</option><option value="handwash">Handwash</option><option value="oil">Cooking Oil</option></select>
+          <input type="number" id="so-qty" placeholder="Quantity (Liters)" class="mb-4">
+          <button class="btn w-full" onclick="placeSupplierOrder()">Submit Order</button>
+        </div>
+        <div class="card col-span-2">
+          <h2 class="text-xl font-bold mb-4 text-[#3ecf7a]">Order History</h2>
+          <table><thead><tr><th>ID</th><th>Product</th><th>Qty (L)</th><th>Status</th><th>Action</th></tr></thead><tbody id="so-table-body"></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Page 4: Analytics -->
+    <div id="page-analytics" class="page">
+      <div class="card mb-6">
+        <h2 class="text-xl font-bold text-[#3ecf7a] mb-4">Product Popularity</h2>
+        <div class="flex items-end gap-4 h-[250px] border-b border-[#333] pb-2" id="analytics-bars"></div>
+      </div>
+      <div class="card">
+        <h2 class="text-xl font-bold mb-4 text-[#3ecf7a]">Raw Session Log</h2>
+        <div style="max-height: 400px; overflow-y: auto;">
+          <table><thead><tr><th>Time</th><th>User/Station</th><th>Product</th><th>Vol (ml)</th><th>Revenue (₹)</th><th>Duration (s)</th></tr></thead><tbody id="al-table-body"></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Page 5: Settings -->
+    <div id="page-settings" class="page">
+      <div class="grid grid-cols-2 gap-6">
+        <div class="card">
+          <h2 class="text-xl font-bold mb-6 text-[#3ecf7a]">Product Pricing (per 100ml)</h2>
+          <div class="grid grid-cols-2 gap-4" id="settings-prices"></div>
+          <button class="btn mt-6" onclick="savePrices()">Save Prices</button>
+        </div>
+        <div class="card">
+          <h2 class="text-xl font-bold mb-6 text-red-500">Danger Zone</h2>
+          <p class="text-gray-400 mb-4">Wipe all session data, orders, and reset tanks to default. This cannot be undone.</p>
+          <button class="btn btn-red w-full" onclick="factoryReset()">Factory Reset Admin Panel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    let STATE = {
+      isOnline: false,
+      logs: [],
+      tanks: { water: 0, shampoo: 0, detergent: 0, handwash: 0, oil: 0 },
+      orders: [],
+      prices: {},
+      alerts: [],
+      unreadAlerts: 0,
+      health: { score: 100, lastPing: Date.now(), sensors: {} }
+    };
+    const PRODUCTS = {
+      water: { name: 'RO Water', color: '#0ea5e9', defPrice: 2.0 },
+      shampoo: { name: 'Shampoo', color: '#f472b6', defPrice: 15.0 },
+      detergent: { name: 'Liquid Detergent', color: '#818cf8', defPrice: 12.0 },
+      handwash: { name: 'Handwash', color: '#34d399', defPrice: 10.0 },
+      oil: { name: 'Cooking Oil', color: '#fbbf24', defPrice: 25.0 }
+    };
+    const TANK_MAX = 5000;
+
+    // === LOCAL CLOUD CLIENT (Replacing Firebase) ===
+    const CLOUD_URL = window.location.origin;
+    
+    // Polyfill Firebase functions for compatibility
+    window.db = "LocalCloud";
+    window.fbRef = (db, path) => path;
+    
+    // Offline Queue System
+    function getPending() { return JSON.parse(localStorage.getItem('rxPendingWrites') || '[]'); }
+    function savePending(writes) { localStorage.setItem('rxPendingWrites', JSON.stringify(writes)); }
+
+    window.safeSet = async function(path, data) {
+      try {
+        if(!STATE.isOnline) throw new Error("Offline");
+        await fetch(CLOUD_URL + '/api/set', { method:'POST', body: JSON.stringify({path, data}) });
+        localStorage.setItem('cache_' + path, JSON.stringify(data));
+      } catch(e) {
+        const p = getPending(); p.push({ action: 'set', path, data }); savePending(p);
+        localStorage.setItem('cache_' + path, JSON.stringify(data));
+      }
+    }
+    
+    window.safePush = async function(path, data) {
+      try {
+        if(!STATE.isOnline) throw new Error("Offline");
+        await fetch(CLOUD_URL + '/api/push', { method:'POST', body: JSON.stringify({path, data}) });
+      } catch(e) {
+        const p = getPending(); p.push({ action: 'push', path, data }); savePending(p);
+      }
+    }
+
+    window.safeUpdate = async function(path, data) {
+      try {
+        if(!STATE.isOnline) throw new Error("Offline");
+        await fetch(CLOUD_URL + '/api/update', { method:'POST', body: JSON.stringify({path, data}) });
+      } catch(e) {
+        const p = getPending(); p.push({ action: 'update', path, data }); savePending(p);
+      }
+    }
+
+    // Connection Monitor Handled By Polling
+    // Subscriptions to Firebase Paths
+    
+    let GLOBAL_STATE = {};
+    const listeners = [];
+
+    window.safeOnValue = function(path, callback, defaultCache = null) {
+      listeners.push({ path, callback });
+      const cached = localStorage.getItem('cache_' + path);
+      if(cached) callback(JSON.parse(cached));
+      else if(defaultCache) callback(defaultCache);
+    }
+
+    function getByPath(d, p) {
+      const keys = p.split('/').filter(k=>k);
+      let curr = d;
+      for(let k of keys) { if(curr && curr[k] !== undefined) curr = curr[k]; else return null; }
+      return curr;
+    }
+
+    setInterval(async () => {
+      try {
+        const res = await fetch(CLOUD_URL + '/api/sync');
+        if(!res.ok) throw new Error("Server error");
+        const data = await res.json();
+        
+        if(!STATE.isOnline) {
+          STATE.isOnline = true;
+          const pending = getPending();
+          if(pending.length > 0) {
+             for(let task of pending) {
+               try { await fetch(CLOUD_URL + '/api/' + task.action, { method:'POST', body: JSON.stringify({path:task.path, data:task.data}) }); } catch(e){}
+             }
+             savePending([]);
+          }
+        }
+        
+        GLOBAL_STATE = data;
+        listeners.forEach(l => {
+           const val = getByPath(data, l.path);
+           if(val !== null) {
+             localStorage.setItem('cache_' + l.path, JSON.stringify(val));
+             l.callback(val);
+           }
+        });
+        
+        const b = document.getElementById('conn-badge');
+        if(b) { b.innerText = "● LIVE SYNC"; b.className = "text-sm font-mono px-3 py-1 rounded-full border text-[#3ecf7a] bg-[#0a170e] border-[#1f6b3e]"; }
+        if(document.getElementById('connection-banner')) document.getElementById('connection-banner').style.display = 'none';
+      } catch(e) {
+        STATE.isOnline = false;
+        const b = document.getElementById('conn-badge');
+        if(b) { b.innerText = "● CACHED"; b.className = "text-sm font-mono px-3 py-1 rounded-full border text-[#f0b429] bg-[#2a1e0b] border-[#806115]"; }
+        if(document.getElementById('connection-banner')) document.getElementById('connection-banner').style.display = 'block';
+      }
+    }, 1500);
+
+    safeOnValue('stations/RFX-001/tanks', (val) => { if(val) STATE.tanks = val; refreshData(); }, STATE.tanks);
+    safeOnValue('stations/RFX-001/health', (val) => { if(val) STATE.health = val; }, STATE.health);
+    safeOnValue('settings/prices', (val) => { if(val) STATE.prices = val; refreshData(); }, {});
+    safeOnValue('sessions', (val) => {
+      if(val) STATE.logs = Object.values(val).sort((a,b) => a.timestamp - b.timestamp);
+      refreshData();
+    }, []);
+    safeOnValue('orders', (val) => {
+      if(val) STATE.orders = Object.keys(val).map(k => ({ dbKey: k, ...val[k] }));
+      refreshData();
+    }, []);
+
+    // Tab Switching
+    window.switchPage = function(pageId) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      document.getElementById('page-' + pageId).classList.add('active');
+      event.currentTarget.classList.add('active');
+      document.getElementById('page-title').innerText = pageId.charAt(0).toUpperCase() + pageId.slice(1);
+      
+      // Clear alert badge if opening health
+      if(pageId === 'health') {
+        STATE.unreadAlerts = 0;
+        document.getElementById('alert-badge').classList.add('hidden');
+      }
+    }
+
+    // Health Monitor Engine
+    let sparklines = { ultrasonic: [], flowSensor: [], temperature: [], tds: [], qrScanner: [] };
+    
+    function playAlertSound() {
+      const actx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = actx.createOscillator();
+      const gain = actx.createGain();
+      osc.type = 'square'; osc.frequency.setValueAtTime(400, actx.currentTime);
+      osc.frequency.setValueAtTime(600, actx.currentTime + 0.2);
+      osc.connect(gain); gain.connect(actx.destination);
+      gain.gain.value = 0.1;
+      osc.start(); osc.stop(actx.currentTime + 0.4);
+    }
+    
+    window.addAlert = function(msg, severity='warning') {
+      const icon = severity === 'error' ? '🔴' : (severity === 'warning' ? '⚠️' : '✅');
+      STATE.alerts.unshift({ msg, severity, icon, time: Date.now() });
+      if(STATE.alerts.length > 50) STATE.alerts.pop();
+      if(severity === 'error') playAlertSound();
+      
+      // Badge update
+      if(!document.getElementById('page-health').classList.contains('active')) {
+        STATE.unreadAlerts = (STATE.unreadAlerts || 0) + 1;
+        const b = document.getElementById('alert-badge');
+        b.innerText = STATE.unreadAlerts; b.classList.remove('hidden');
+      }
+      renderAlerts();
+    }
+    
+    window.clearAlerts = function() { STATE.alerts = []; renderAlerts(); }
+    
+    function renderAlerts() {
+      const feed = document.getElementById('alert-feed');
+      if(!feed) return;
+      feed.innerHTML = STATE.alerts.map(a => `
+        <div class="flex justify-between items-center p-3 rounded bg-[#111] border-l-4 ${a.severity==='error'?'border-red-500':(a.severity==='warning'?'border-yellow-500':'border-green-500')}">
+           <div><span class="mr-2">${a.icon}</span> ${a.msg}</div>
+           <div class="text-xs text-gray-500">${new Date(a.time).toLocaleTimeString()}</div>
+        </div>
+      `).join('') || '<div class="text-gray-500 p-4 text-center">No active alerts.</div>';
+    }
+
+    let currentScoreDisplay = 100;
+    
+    function calculateHealthScore() {
+      if(!STATE.health || !STATE.health.sensors) return 100;
+      let score = 100;
+      const now = Date.now();
+      
+      let activeAlerts = 0;
+      
+      Object.entries(STATE.health.sensors).forEach(([k, s]) => {
+        if(s.status === 'error') { score -= 15; activeAlerts++; }
+        if(s.status === 'warning') { score -= 7; activeAlerts++; }
+        if(now - s.lastUpdate > 30000) { score -= 10; activeAlerts++; }
+      });
+      
+      let pingAge = Math.floor((now - STATE.health.lastPing) / 1000);
+      if(pingAge > 15) { score -= 20; activeAlerts++; }
+      
+      document.getElementById('health-ping').innerText = pingAge + 's ago';
+      document.getElementById('health-alerts-count').innerText = activeAlerts;
+      
+      score = Math.max(0, score);
+      
+      // Update DB if score drifted significantly (simulated backend logic)
+      if (Math.abs(STATE.health.score - score) > 5) {
+         if(score < 50 && STATE.health.score >= 50) window.addAlert("Health score dropped to " + score, 'error');
+         if(score >= 80 && STATE.health.score < 80) window.addAlert("Station health restored — score: " + score, 'success');
+         // local memory update to prevent spam
+         STATE.health.score = score;
+      }
+      
+      return score;
+    }
+
+    function renderHealthMonitor() {
+      if(!document.getElementById('page-health').classList.contains('active')) return;
+      
+      const targetScore = calculateHealthScore();
+      
+      // Smooth animation for gauge
+      if(currentScoreDisplay < targetScore) currentScoreDisplay++;
+      if(currentScoreDisplay > targetScore) currentScoreDisplay--;
+      
+      document.getElementById('health-score-val').innerText = currentScoreDisplay;
+      
+      const gauge = document.getElementById('health-gauge');
+      const offset = 251.2 - (251.2 * (currentScoreDisplay / 100));
+      gauge.style.strokeDasharray = `${251.2 - offset} 251.2`;
+      
+      let color = '#3ecf7a'; let label = 'Excellent';
+      if(currentScoreDisplay < 80) { color = '#f0b429'; label = 'Degraded'; }
+      if(currentScoreDisplay < 50) { color = '#ff4d4d'; label = 'Critical'; }
+      
+      gauge.style.stroke = color;
+      document.getElementById('health-score-label').innerText = label;
+      document.getElementById('health-score-label').style.color = color;
+      
+      // Render Sensors
+      const SENSOR_META = {
+        ultrasonic: { name: 'Ultrasonic', model: 'HC-SR04', pin: 'GPIO14/27' },
+        flowSensor: { name: 'Flow Sensor', model: 'YF-S201', pin: 'GPIO18' },
+        temperature: { name: 'Temperature', model: 'DS18B20', pin: 'GPIO4' },
+        tds: { name: 'TDS Sensor', model: 'Generic', pin: 'GPIO34' },
+        qrScanner: { name: 'QR Scanner', model: 'OV2640', pin: 'PWDN32' }
+      };
+      
+      const now = Date.now();
+      let html = '';
+      Object.entries(STATE.health.sensors || {}).forEach(([k, s]) => {
+         const meta = SENSOR_META[k];
+         const age = Math.floor((now - s.lastUpdate)/1000);
+         let renderStatus = s.status;
+         if(age > 30) renderStatus = 'offline';
+         
+         let sColor = renderStatus === 'ok' ? 'text-green-500' : (renderStatus === 'error' ? 'text-red-500' : (renderStatus==='offline'?'text-gray-500':'text-yellow-500'));
+         let bgBadge = renderStatus === 'ok' ? 'bg-green-500/20' : (renderStatus === 'error' ? 'bg-red-500/20' : 'bg-gray-500/20');
+         
+         // Update sparkline
+         let valNum = parseFloat(s.lastReading) || 0;
+         sparklines[k].push(valNum);
+         if(sparklines[k].length > 20) sparklines[k].shift();
+         const maxV = Math.max(...sparklines[k], 1);
+         const pts = sparklines[k].map((v, i) => `${(i/19)*100},${40 - (v/maxV)*40}`).join(' ');
+         
+         html += `
+           <div class="sensor-card ${renderStatus === 'error' ? 'error' : ''}">
+             ${renderStatus === 'error' ? '<div class="absolute top-0 left-0 w-full bg-red-500 text-white text-[10px] text-center font-bold">🚨 SENSOR ERROR</div>' : ''}
+             <div class="text-xs text-gray-400 font-bold mb-1 mt-2">${meta.model}</div>
+             <div class="text-sm font-bold mb-2">${meta.name} <span class="text-[10px] bg-[#222] px-1 rounded">${meta.pin}</span></div>
+             <div class="text-2xl font-mono text-white mb-2">${s.lastReading}</div>
+             <div class="flex justify-between items-center text-xs">
+               <span class="px-2 py-1 rounded font-bold uppercase ${sColor} ${bgBadge}">${renderStatus}</span>
+               <span class="text-gray-500">${age}s ago</span>
+             </div>
+             <svg class="sparkline"><polyline fill="none" stroke="${renderStatus==='error'?'#ff4d4d':'#3ecf7a'}" stroke-width="2" points="${pts}"/></svg>
+           </div>
+         `;
+      });
+      document.getElementById('sensors-grid').innerHTML = html;
+    }
+    
+    // Main render loop
+    setInterval(() => {
+      renderHealthMonitor();
+    }, 1000);
+
+    // Sim Controls
+    window.simError = function() {
+      const s = document.getElementById('sim-sensor').value;
+      safeUpdate(`stations/RFX-001/health/sensors/${s}`, { status: 'error', lastUpdate: Date.now() });
+      window.addAlert(`Simulated error on ${s}`, 'error');
+    }
+    window.simOffline = function() {
+      safeUpdate(`stations/RFX-001/health`, { lastPing: Date.now() - 60000 });
+      window.addAlert(`Simulated Station Offline (Ping delayed)`, 'error');
+    }
+    window.simScoreDrop = function() {
+      safeUpdate(`stations/RFX-001/health/sensors/flowSensor`, { status: 'warning', lastUpdate: Date.now() });
+      safeUpdate(`stations/RFX-001/health/sensors/ultrasonic`, { status: 'warning', lastUpdate: Date.now() });
+      window.addAlert(`Simulated warning scenarios`, 'warning');
+    }
+    window.restoreAll = function() {
+      const updates = {};
+      updates['lastPing'] = Date.now();
+      ['ultrasonic','flowSensor','temperature','tds','qrScanner'].forEach(s => {
+         updates[`sensors/${s}/status`] = 'ok';
+         updates[`sensors/${s}/lastUpdate`] = Date.now();
+      });
+      safeUpdate(`stations/RFX-001/health`, updates);
+      window.addAlert(`Restored all sensors to OK`, 'success');
+    }
+
+    // Existing Logic Adapted
+    function refreshData() {
+      const { logs, tanks, orders, prices } = STATE;
+      
+      let totalRev = 0, totalVol = 0, totalTime = 0;
+      logs.forEach(l => { totalRev += parseFloat(l.amount || 0); totalVol += (l.quantity || 0); totalTime += parseInt(l.duration || 0); });
+      
+      document.getElementById('d-rev').innerText = `₹${totalRev.toFixed(0)}`;
+      document.getElementById('d-sessions').innerText = logs.length;
+      document.getElementById('d-plastic').innerText = Math.floor(totalVol / 500);
+      document.getElementById('d-avg-time').innerText = logs.length ? `${Math.floor(totalTime / logs.length)}s` : '0s';
+      
+      let invHtml = '';
+      Object.keys(PRODUCTS).forEach(k => {
+        const val = tanks[k] || 0;
+        const pct = (val / TANK_MAX) * 100;
+        const col = pct < 20 ? '#ff4d4d' : PRODUCTS[k].color;
+        invHtml += `
+          <div class="card flex flex-col items-center">
+            <h3 class="text-sm font-bold text-gray-400 mb-4">${PRODUCTS[k].name}</h3>
+            <div class="tank-visual">
+              <div class="tank-fill" style="height: ${Math.min(100, Math.max(0, pct))}%; background: ${col};"></div>
+            </div>
+            <div class="mt-4 font-mono text-xl font-bold text-white">${val.toFixed(0)}ml</div>
+            <div class="text-xs text-gray-500 mb-4">${pct.toFixed(1)}%</div>
+            <button class="btn btn-outline text-xs px-3 py-2 w-full mt-auto" onclick="quickAddLitres('${k}', 1)">+ 1 Litre</button>
+          </div>
+        `;
+      });
+      document.getElementById('inv-tanks-container').innerHTML = invHtml;
+
+      const orderHtml = orders.map((o) => `
+        <tr>
+          <td class="font-mono text-gray-400">#ORD-${o.dbKey.slice(-4)}</td>
+          <td>${PRODUCTS[o.product] ? PRODUCTS[o.product].name : o.product}</td>
+          <td>${o.quantity}L</td>
+          <td><span class="px-2 py-1 rounded text-xs font-bold ${o.status === 'pending' ? 'bg-[#f0b429] text-black' : 'bg-[#3ecf7a] text-black'}">${o.status}</span></td>
+          <td>${o.status === 'pending' ? `<button class="text-xs bg-[#222] px-3 py-1 rounded hover:bg-[#333]" onclick="markOrderDelivered('${o.dbKey}')">Mark Delivered</button>` : '-'}</td>
+        </tr>
+      `).join('');
+      document.getElementById('so-table-body').innerHTML = orderHtml || '<tr><td colspan="5" class="text-center text-gray-500">No orders placed.</td></tr>';
+
+      const logHtml = logs.slice().reverse().map(l => `
+        <tr>
+          <td class="text-gray-400 text-sm">${new Date(l.timestamp).toLocaleString()}</td>
+          <td class="font-mono text-xs text-[#3ecf7a]">${l.userId || l.stationId || '-'}</td>
+          <td>${PRODUCTS[l.product] ? PRODUCTS[l.product].name : l.product}</td>
+          <td>${(l.quantity || 0).toFixed(0)}</td>
+          <td>₹${l.amount}</td>
+          <td>${l.duration}s</td>
+        </tr>
+      `).join('');
+      document.getElementById('al-table-body').innerHTML = logHtml || '<tr><td colspan="6" class="text-center text-gray-500">No sessions recorded yet.</td></tr>';
+      
+      let priceHtml = '';
+      Object.keys(PRODUCTS).forEach(k => {
+        const p = prices[k] || PRODUCTS[k].defPrice;
+        priceHtml += `
+          <div>
+            <label class="block text-sm text-gray-400 mb-1">${PRODUCTS[k].name}</label>
+            <input type="number" step="0.1" id="price-${k}" value="${p}">
+          </div>
+        `;
+      });
+      document.getElementById('settings-prices').innerHTML = priceHtml;
+    }
+
+    window.quickAddLitres = function(p, l) {
+       const v = STATE.tanks[p] || 0;
+       safeUpdate(`stations/RFX-001/tanks`, { [p]: Math.min(TANK_MAX, v + l*1000) });
+       safePush('restockHistory', { product: p, amountAdded: l*1000, operator: 'Admin', timestamp: Date.now(), newLevel: Math.min(TANK_MAX, v + l*1000) });
+    }
+
+    window.placeSupplierOrder = function() {
+      const p = document.getElementById('so-product').value;
+      const q = document.getElementById('so-qty').value;
+      if(!q) return alert('Enter quantity');
+      safePush('orders', { product: p, quantity: q, supplier: 'AquaPure Supplies', status: 'pending', orderDate: Date.now() });
+      document.getElementById('so-qty').value = '';
+    }
+
+    window.markOrderDelivered = function(id) {
+      safeUpdate(`orders/${id}`, { status: 'delivered', deliveryDate: Date.now() });
+    }
+
+    window.savePrices = function() {
+      const p = {};
+      Object.keys(PRODUCTS).forEach(k => { p[k] = parseFloat(document.getElementById('price-'+k).value); });
+      safeSet('settings/prices', p);
+      alert("Prices saved globally.");
+    }
+
+    window.factoryReset = function() {
+      if(confirm("Are you SURE you want to wipe all Cloud data?")) {
+        safeSet('logs/sessions', null); // clear old paths
+        safeSet('sessions', null);      // clear new path
+        safeSet('orders', null);
+        safeSet('stations/RFX-001/tanks', { water: 10000, shampoo: 5000, detergent: 5000, handwash: 5000, oil: 5000 });
+      }
+    }
+  </script>
+</body>
+</html>

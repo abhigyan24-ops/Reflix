@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#060f09">
+  <title>RefillX Mobile</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;900&display=swap" rel="stylesheet">
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <style>
+    :root {
+      --bg: #060f09;
+      --bg-card: #0a170e;
+      --green-bright: #3ecf7a;
+      --green-dark: #1f6b3e;
+      --text-main: #f0fdf4;
+      --text-muted: #86efac;
+    }
+    
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background-color: var(--bg);
+      color: var(--text-main);
+      overflow-x: hidden;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    
+    .screen {
+      display: none;
+      min-height: 100vh;
+      width: 100vw;
+      padding: 1.5rem;
+      padding-bottom: 6rem;
+      animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    
+    .screen.active {
+      display: flex;
+      flex-direction: column;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(12px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    
+    .btn-primary {
+      background-color: var(--green-bright);
+      color: #060f09;
+      font-weight: 900;
+      padding: 1.1rem;
+      border-radius: 1rem;
+      text-align: center;
+      transition: transform 0.15s, opacity 0.2s, box-shadow 0.2s;
+      box-shadow: 0 4px 20px rgba(62, 207, 122, 0.2);
+    }
+    
+    .btn-primary:active {
+      transform: scale(0.96);
+      opacity: 0.9;
+      box-shadow: 0 2px 10px rgba(62, 207, 122, 0.2);
+    }
+    
+    .glass-card {
+      background: var(--bg-card);
+      border: 1px solid rgba(62, 207, 122, 0.2);
+      border-radius: 1.25rem;
+      padding: 1.25rem;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
+    
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 5rem;
+      background: rgba(6, 15, 9, 0.95);
+      backdrop-filter: blur(12px);
+      border-top: 1px solid rgba(62, 207, 122, 0.1);
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding-bottom: env(safe-area-inset-bottom);
+      z-index: 50;
+    }
+    
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.3rem;
+      color: #4b5563;
+      font-size: 0.7rem;
+      font-weight: 700;
+      transition: color 0.2s;
+    }
+    
+    .nav-item.active {
+      color: var(--green-bright);
+    }
+    
+    .otp-input {
+      background: rgba(31, 107, 62, 0.1);
+      border: 2px solid var(--green-dark);
+      border-radius: 0.75rem;
+      color: var(--text-main);
+      text-align: center;
+      font-size: 1.5rem;
+      font-weight: 900;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    
+    .otp-input:focus {
+      outline: none;
+      border-color: var(--green-bright);
+      background: rgba(62, 207, 122, 0.1);
+    }
+    
+    /* Variant Picker Styling */
+    .variant-picker input:checked + div {
+      border-color: var(--green-bright);
+      background: rgba(62, 207, 122, 0.1);
+      box-shadow: inset 0 0 0 1px var(--green-bright);
+    }
+    
+    #qrcode img {
+      margin: 0 auto;
+      border-radius: 0.75rem;
+      width: 100%;
+      height: auto;
+    }
+    
+    /* Wave dispense animation */
+    .wave-container {
+      position: relative;
+      width: 140px;
+      height: 140px;
+      border-radius: 50%;
+      border: 4px solid var(--green-dark);
+      overflow: hidden;
+      margin: 0 auto;
+      background: #040905;
+      box-shadow: inset 0 0 20px rgba(0,0,0,0.8), 0 0 30px rgba(62, 207, 122, 0.15);
+    }
+    
+    .wave-fill {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: linear-gradient(180deg, var(--green-bright) 0%, var(--green-dark) 100%);
+      transition: height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    /* Simulate water surface */
+    .wave-fill::before {
+      content: '';
+      position: absolute;
+      top: -10px;
+      left: -50%;
+      width: 200%;
+      height: 20px;
+      background: radial-gradient(ellipse at center, rgba(255,255,255,0.4) 0%, transparent 70%);
+      border-radius: 50%;
+      animation: ripple 2s infinite linear;
+    }
+    
+    @keyframes ripple {
+      0% { transform: translateX(0) scaleY(1); }
+      50% { transform: translateX(-10%) scaleY(1.2); }
+      100% { transform: translateX(0) scaleY(1); }
+    }
+    
+    .hide-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .hide-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Screen 1: Login -->
+  <div id="screen-login" class="screen active justify-center">
+    <div class="text-center mb-10">
+      <div class="inline-block bg-[#1f6b3e]/30 p-4 rounded-3xl border border-[#3ecf7a]/30 mb-6 shadow-[0_0_30px_rgba(62,207,122,0.2)]">
+        <i data-lucide="droplets" class="w-14 h-14 text-[#3ecf7a]"></i>
+      </div>
+      <h1 class="text-4xl font-black tracking-widest text-white">REFILLX</h1>
+      <p class="text-[#86efac] mt-2 text-sm font-medium tracking-wide">Smart Eco Refill Station</p>
+    </div>
+    
+    <div class="glass-card space-y-5 shadow-xl" id="login-step-1">
+      <div>
+        <label class="text-[10px] font-bold text-[#86efac] uppercase tracking-widest block mb-2">Phone Number</label>
+        <div class="flex shadow-inner rounded-xl overflow-hidden">
+          <div class="bg-[#1f6b3e] text-white px-4 py-3.5 font-black border-r border-[#060f09] flex items-center">+91</div>
+          <input type="tel" id="phone-input" class="w-full bg-[#060f09]/50 px-4 py-3.5 text-white font-bold text-lg focus:outline-none focus:bg-[#060f09]" placeholder="99999 99999" value="9876543210">
+        </div>
+      </div>
+      <button onclick="requestOTP()" class="btn-primary w-full flex items-center justify-center gap-2">
+        Send OTP <i data-lucide="arrow-right" class="w-5 h-5"></i>
+      </button>
+    </div>
+
+    <div class="glass-card space-y-5 hidden shadow-xl" id="login-step-2">
+      <div class="text-center">
+        <label class="text-[10px] font-bold text-[#86efac] uppercase tracking-widest block mb-1">Enter OTP</label>
+        <p class="text-[10px] text-gray-400">Sent to +91 98765 43210</p>
+      </div>
+      <div class="flex justify-center gap-3 py-2">
+        <input type="text" maxlength="1" class="otp-input w-14 h-16" value="1">
+        <input type="text" maxlength="1" class="otp-input w-14 h-16" value="2">
+        <input type="text" maxlength="1" class="otp-input w-14 h-16" value="3">
+        <input type="text" maxlength="1" class="otp-input w-14 h-16" value="4">
+      </div>
+      <button onclick="verifyOTP()" class="btn-primary w-full flex items-center justify-center gap-2">
+        Verify & Login <i data-lucide="check-circle" class="w-5 h-5"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Screen 2: Home -->
+  <div id="screen-home" class="screen">
+    <div class="flex justify-between items-center mb-8 pt-2">
+      <div>
+        <p class="text-[#86efac] text-[10px] font-bold uppercase tracking-widest mb-0.5">Welcome back</p>
+        <h2 class="text-2xl font-black text-white">Savior</h2>
+      </div>
+      <div class="w-11 h-11 rounded-full bg-[#1f6b3e] flex items-center justify-center font-black text-lg border-2 border-[#3ecf7a]">S</div>
+    </div>
+
+    <div class="flex justify-between items-end mb-4">
+      <h3 class="text-xs font-bold text-[#86efac] uppercase tracking-widest">Nearby Stations</h3>
+      <span class="text-[10px] text-[#3ecf7a] font-bold flex items-center gap-1">
+        <i data-lucide="crosshair" class="w-3 h-3"></i> GPS Active
+      </span>
+    </div>
+    
+    <div class="space-y-3">
+      <!-- Station 1 -->
+      <div class="glass-card flex items-center justify-between cursor-pointer active:scale-95 transition-transform bg-gradient-to-r from-[#0a170e] to-[#0d2114]" onclick="selectStation('SIM-001')">
+        <div class="flex items-center gap-3">
+          <div class="bg-[#1f6b3e]/40 p-3 rounded-full border border-[#3ecf7a]/30 shadow-[0_0_15px_rgba(62,207,122,0.2)]">
+            <i data-lucide="map-pin" class="w-5 h-5 text-[#3ecf7a]"></i>
+          </div>
+          <div>
+            <h4 class="font-bold text-white text-[15px] mb-0.5">TechPark Hub</h4>
+            <p class="text-[11px] text-[#86efac] font-medium opacity-80">SIM-001 • 0.2 km away</p>
+          </div>
+        </div>
+        <div class="flex flex-col items-end gap-1">
+          <div class="flex items-center gap-1.5 px-2 py-1 rounded border border-[#3ecf7a] bg-[#3ecf7a]/10">
+            <div class="w-2 h-2 rounded-full bg-[#3ecf7a] animate-pulse"></div>
+            <span class="text-[9px] font-black text-[#3ecf7a] uppercase tracking-widest">Available</span>
+          </div>
+          <span class="text-[9px] text-gray-400">3 products</span>
+        </div>
+      </div>
+
+      <!-- Station 2 -->
+      <div class="glass-card flex items-center justify-between opacity-60">
+        <div class="flex items-center gap-3">
+          <div class="bg-gray-800 p-3 rounded-full">
+            <i data-lucide="map-pin" class="w-5 h-5 text-gray-400"></i>
+          </div>
+          <div>
+            <h4 class="font-bold text-white text-[15px] mb-0.5">Metro Station #4</h4>
+            <p class="text-[11px] text-gray-400 font-medium">1.1 km away</p>
+          </div>
+        </div>
+        <div class="flex flex-col items-end gap-1">
+          <div class="flex items-center gap-1.5 px-2 py-1 rounded border border-red-500 bg-red-500/10">
+            <div class="w-2 h-2 rounded-full bg-red-500"></div>
+            <span class="text-[9px] font-black text-red-500 uppercase tracking-widest">Busy</span>
+          </div>
+          <span class="text-[9px] text-gray-500">Water only</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Screen 3: Product Selection -->
+  <div id="screen-product" class="screen">
+    <div class="flex items-center gap-3 mb-8 pt-2 cursor-pointer w-fit active:opacity-70 transition-opacity" onclick="navigate('screen-home')">
+      <div class="bg-[#1f6b3e]/30 p-2 rounded-full border border-[#3ecf7a]/20">
+        <i data-lucide="arrow-left" class="w-5 h-5 text-[#3ecf7a]"></i>
+      </div>
+      <h2 class="text-xl font-black text-white">Select Product</h2>
+    </div>
+
+    <div class="flex overflow-x-auto pb-6 gap-3 snap-x hide-scrollbar mb-2" id="product-list">
+      <!-- Water -->
+      <div class="snap-start shrink-0 w-[140px] glass-card flex flex-col items-center justify-center gap-3 cursor-pointer border-[#3ecf7a] bg-[#3ecf7a]/10 shadow-[0_0_20px_rgba(62,207,122,0.1)] transition-colors" onclick="selectProductType('water', this)">
+        <div class="bg-[#1f6b3e]/40 p-3 rounded-full">
+          <i data-lucide="droplets" class="w-8 h-8 text-[#3ecf7a]"></i>
+        </div>
+        <span class="font-black text-sm text-white">Pure Water</span>
+      </div>
+      <!-- Shampoo -->
+      <div class="snap-start shrink-0 w-[140px] glass-card flex flex-col items-center justify-center gap-3 cursor-pointer transition-colors" onclick="selectProductType('shampoo', this)">
+        <div class="bg-gray-800/50 p-3 rounded-full">
+          <i data-lucide="spray-can" class="w-8 h-8 text-gray-400"></i>
+        </div>
+        <span class="font-black text-sm text-gray-300">Shampoo</span>
+      </div>
+      <!-- Detergent -->
+      <div class="snap-start shrink-0 w-[140px] glass-card flex flex-col items-center justify-center gap-3 cursor-pointer transition-colors" onclick="selectProductType('detergent', this)">
+        <div class="bg-gray-800/50 p-3 rounded-full">
+          <i data-lucide="sparkles" class="w-8 h-8 text-gray-400"></i>
+        </div>
+        <span class="font-black text-sm text-gray-300">Detergent</span>
+      </div>
+    </div>
+
+    <h3 class="text-xs font-bold text-[#86efac] uppercase tracking-widest mb-4">Quantity</h3>
+    
+    <div class="space-y-3 mb-8">
+      <label class="variant-picker block cursor-pointer">
+        <input type="radio" name="quantity" value="250" data-price="5" class="hidden">
+        <div class="glass-card flex justify-between items-center transition-colors">
+          <div>
+            <span class="font-black text-white block text-lg mb-0.5">250 ml</span>
+            <span class="text-[10px] text-[#86efac] font-medium uppercase tracking-wider">Small size</span>
+          </div>
+          <span class="font-black text-2xl text-[#3ecf7a]">₹5</span>
+        </div>
+      </label>
+      <label class="variant-picker block cursor-pointer">
+        <input type="radio" name="quantity" value="500" data-price="10" class="hidden" checked>
+        <div class="glass-card flex justify-between items-center transition-colors border-[#3ecf7a] bg-[#3ecf7a]/10 shadow-[inset_0_0_0_1px_#3ecf7a]">
+          <div>
+            <span class="font-black text-white block text-lg mb-0.5">500 ml</span>
+            <span class="text-[10px] text-[#86efac] font-medium uppercase tracking-wider">Medium size</span>
+          </div>
+          <span class="font-black text-2xl text-[#3ecf7a]">₹10</span>
+        </div>
+      </label>
+      <label class="variant-picker block cursor-pointer">
+        <input type="radio" name="quantity" value="1000" data-price="20" class="hidden">
+        <div class="glass-card flex justify-between items-center transition-colors">
+          <div>
+            <span class="font-black text-white block text-lg mb-0.5">1000 ml</span>
+            <span class="text-[10px] text-[#86efac] font-medium uppercase tracking-wider">Large / 1L</span>
+          </div>
+          <span class="font-black text-2xl text-[#3ecf7a]">₹20</span>
+        </div>
+      </label>
+    </div>
+
+    <div class="mt-auto pb-4">
+      <div class="flex justify-between items-center mb-5 px-3 bg-[#0a170e] py-3 border border-[#1f6b3e] rounded-xl">
+        <span class="text-xs font-bold text-[#86efac] uppercase tracking-wider">Total Amount</span>
+        <span class="font-black text-xl text-white" id="total-price-display">₹10</span>
+      </div>
+      <button onclick="generateQR()" class="btn-primary w-full flex justify-center items-center gap-2">
+        <i data-lucide="qr-code" class="w-5 h-5"></i> Generate QR Code
+      </button>
+    </div>
+  </div>
+
+  <!-- Screen 4: QR Generation Fullscreen -->
+  <div id="screen-qr" class="screen items-center justify-center text-center">
+    <div class="absolute top-6 left-6 cursor-pointer bg-[#1f6b3e]/30 p-2 rounded-full border border-[#3ecf7a]/20 active:opacity-70 transition-opacity" onclick="navigate('screen-product')">
+      <i data-lucide="x" class="w-6 h-6 text-[#3ecf7a]"></i>
+    </div>
+    
+    <div class="mb-8 mt-10">
+      <h2 class="text-2xl font-black text-white mb-2 tracking-wide">Scan at Station</h2>
+      <p class="text-[11px] text-[#86efac] max-w-[220px] mx-auto leading-relaxed">Point the kiosk scanner at this QR code to securely authorize the dispense.</p>
+    </div>
+
+    <div class="bg-white p-7 rounded-3xl mb-10 shadow-[0_0_50px_rgba(62,207,122,0.4)] border-4 border-[#3ecf7a]">
+      <div id="qrcode" class="w-[300px] h-[300px] flex items-center justify-center"></div>
+    </div>
+    
+    <div class="glass-card w-full max-w-[280px] bg-gradient-to-b from-[#0a170e] to-[#060f09]">
+      <div class="flex items-center justify-between mb-1">
+        <p class="text-[10px] text-[#86efac] uppercase tracking-widest font-bold">Session ID</p>
+        <span class="w-2 h-2 rounded-full bg-[#3ecf7a] animate-pulse"></span>
+      </div>
+      <p class="text-[13px] font-mono font-bold text-white text-left tracking-wider" id="display-session-id">...</p>
+    </div>
+
+    <!-- For demo purposes, a button to simulate kiosk scanning -->
+    <button onclick="simulateKioskScan()" class="mt-10 px-4 py-2 bg-[#1f6b3e]/20 border border-[#1f6b3e] rounded-lg text-[10px] text-[#3ecf7a] uppercase tracking-widest font-bold active:bg-[#1f6b3e]/40 transition-colors">
+      [Demo: Simulate Kiosk Scan]
+    </button>
+  </div>
+
+  <!-- Screen 5: Waiting / Dispensing Progress -->
+  <div id="screen-waiting" class="screen items-center justify-center text-center">
+    <div class="mb-12">
+      <h2 class="text-3xl font-black text-[#3ecf7a] mb-2 tracking-wider animate-pulse">Dispensing...</h2>
+      <p class="text-xs text-[#86efac] font-medium">Please place your container under the nozzle.</p>
+    </div>
+
+    <div class="wave-container mb-12">
+      <div class="wave-fill" id="dispense-fill" style="height: 0%"></div>
+      <div class="absolute inset-0 flex items-center justify-center font-black text-3xl text-white z-10" id="dispense-percentage" style="text-shadow: 0 2px 10px rgba(0,0,0,0.5);">
+        0%
+      </div>
+    </div>
+
+    <div class="glass-card w-full max-w-[280px] text-left border-[#1f6b3e]">
+      <div class="flex justify-between items-center mb-3">
+        <span class="text-[10px] text-[#86efac] uppercase tracking-widest font-bold">Product</span>
+        <span class="font-black text-white capitalize text-sm bg-[#1f6b3e] px-2 py-1 rounded" id="dispense-product-name">Water</span>
+      </div>
+      <div class="flex justify-between items-center mb-4">
+        <span class="text-[10px] text-[#86efac] uppercase tracking-widest font-bold">Target Volume</span>
+        <span class="font-black text-white text-sm"><span id="dispense-target-vol">500</span> ml</span>
+      </div>
+      <div class="flex justify-between items-center border-t border-[#1f6b3e] pt-4">
+        <span class="text-[10px] text-[#86efac] uppercase tracking-widest font-bold">Current Volume</span>
+        <span class="font-black text-[#3ecf7a] text-lg"><span id="dispense-current-vol">0</span> ml</span>
+      </div>
+      <button id="btn-proceed-payment" onclick="goToPayment()" class="btn-primary w-full mt-6 hidden flex items-center justify-center gap-2">
+        Proceed to Payment <i data-lucide="arrow-right" class="w-5 h-5"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Screen 6: Payment -->
+  <div id="screen-payment" class="screen justify-between pt-12">
+    <div>
+      <div class="w-20 h-20 bg-[#0a170e] rounded-full flex items-center justify-center mx-auto mb-6 border-4 border-[#3ecf7a] shadow-[0_0_30px_rgba(62,207,122,0.3)]">
+        <i data-lucide="check" class="w-10 h-10 text-[#3ecf7a]"></i>
+      </div>
+      <h2 class="text-3xl font-black text-white text-center mb-10 tracking-wide">Dispense Complete</h2>
+
+      <div class="glass-card mb-6">
+        <h3 class="text-[10px] font-bold text-[#86efac] uppercase tracking-widest mb-4 border-b border-[#1f6b3e] pb-3">Order Summary</h3>
+        <div class="flex justify-between items-center text-sm mb-3">
+          <span class="text-white capitalize font-bold" id="pay-product-name">Water</span>
+          <span class="text-[#86efac] font-medium bg-[#1f6b3e]/30 px-2 py-1 rounded"><span id="pay-qty">500</span> ml</span>
+        </div>
+        <div class="flex justify-between items-center font-black border-t border-[#1f6b3e] pt-4 mt-4">
+          <span class="text-white text-sm uppercase tracking-wider">Total Amount</span>
+          <span class="text-[#3ecf7a] text-2xl" id="pay-amount">₹10</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="pb-2 space-y-5">
+      <a href="#" id="upi-link" target="_top" onclick="handleUpiClick(event)" class="btn-primary w-full flex justify-center items-center gap-3 text-lg py-4">
+        Pay with UPI <i data-lucide="external-link" class="w-5 h-5 opacity-70"></i>
+      </a>
+      <p class="text-center text-[10px] text-[#86efac] font-bold uppercase tracking-widest flex items-center justify-center gap-1.5">
+        <i data-lucide="shield-check" class="w-3 h-3"></i> Secure Payment
+      </p>
+    </div>
+  </div>
+
+  <!-- Screen 7: Success Conf -->
+  <div id="screen-success" class="screen items-center justify-center text-center">
+    <div class="relative w-24 h-24 mx-auto mb-8">
+      <div class="absolute inset-0 bg-[#3ecf7a]/20 rounded-full animate-ping"></div>
+      <div class="relative w-full h-full bg-[#1f6b3e]/40 border-2 border-[#3ecf7a] rounded-full flex items-center justify-center z-10 shadow-[0_0_40px_rgba(62,207,122,0.4)]">
+        <i data-lucide="party-popper" class="w-10 h-10 text-[#3ecf7a]"></i>
+      </div>
+    </div>
+    
+    <h2 class="text-4xl font-black text-white mb-3 tracking-widest">Thank You!</h2>
+    <p class="text-xs text-[#86efac] mb-12 font-medium">Payment successful. See you next time!</p>
+
+    <div class="glass-card w-full max-w-[300px] grid grid-cols-2 gap-4 divide-x divide-[#1f6b3e]">
+      <div class="px-2">
+        <p class="text-[10px] text-[#86efac] uppercase tracking-widest font-bold">Points Earned</p>
+        <p class="text-2xl font-black text-[#3ecf7a] mt-2">+<span id="pts-earned">5</span> <span class="text-base">🌟</span></p>
+      </div>
+      <div class="px-2">
+        <p class="text-[10px] text-[#86efac] uppercase tracking-widest font-bold">CO₂ Saved</p>
+        <p class="text-2xl font-black text-[#3ecf7a] mt-2">45g <span class="text-base">🌿</span></p>
+      </div>
+    </div>
+    
+    <button onclick="navigate('screen-home')" class="mt-16 px-6 py-3 bg-[#1f6b3e]/30 border border-[#1f6b3e] text-white font-bold rounded-xl active:bg-[#1f6b3e]/60 transition-colors uppercase tracking-widest text-[11px]">
+      Back to Home
+    </button>
+  </div>
+
+  <!-- Bottom Nav -->
+  <div class="bottom-nav hidden" id="bottom-nav">
+    <div class="nav-item active" onclick="navigate('screen-home')">
+      <i data-lucide="home" class="w-6 h-6"></i>
+      <span>Home</span>
+    </div>
+    <div class="nav-item">
+      <i data-lucide="map" class="w-6 h-6"></i>
+      <span>Map</span>
+    </div>
+    <div class="nav-item">
+      <i data-lucide="wallet" class="w-6 h-6"></i>
+      <span>Wallet</span>
+    </div>
+    <div class="nav-item">
+      <i data-lucide="user" class="w-6 h-6"></i>
+      <span>Profile</span>
+    </div>
+  </div>
+
+  <!-- Firebase Setup -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+    import { getDatabase, ref, set, onValue, update } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+
+    // Reusing the config found in the project
+    const firebaseConfig = {
+      apiKey: "AIzaSyDummyKeyForRefillxSimulation_999",
+      projectId: "refillx-smart",
+      databaseURL: "https://refillx-smart-default-rtdb.firebaseio.com"
+    };
+
+    try {
+      const app = initializeApp(firebaseConfig);
+      const db = getDatabase(app);
+      window.db = db;
+      window.ref = ref;
+      window.set = set;
+      window.onValue = onValue;
+      window.update = update;
+      console.log("Firebase RTDB initialized");
+    } catch(e) {
+      console.error("Firebase init failed:", e);
+    }
+  </script>
+
+  <script>
+    // Initialize icons
+    lucide.createIcons();
+
+    // Global state
+    window.appState = {
+      userId: 'usr_savior_123',
+      stationId: '',
+      product: 'water',
+      quantity: 500,
+      price: 10,
+      sessionId: ''
+    };
+
+    function navigate(screenId) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      const target = document.getElementById(screenId);
+      target.classList.add('active');
+      
+      // Trigger reflow to restart animations
+      void target.offsetWidth;
+      
+      // Show/hide bottom nav
+      const nav = document.getElementById('bottom-nav');
+      if (['screen-home'].includes(screenId)) {
+        nav.classList.remove('hidden');
+      } else {
+        nav.classList.add('hidden');
+      }
+    }
+
+    // Login Flow
+    function requestOTP() {
+      document.getElementById('login-step-1').classList.add('hidden');
+      document.getElementById('login-step-2').classList.remove('hidden');
+      setTimeout(() => document.querySelector('.otp-input').focus(), 100);
+    }
+
+    function verifyOTP() {
+      navigate('screen-home');
+    }
+
+    // Auto-focus logic for OTP inputs
+    const otpInputs = document.querySelectorAll('.otp-input');
+    otpInputs.forEach((input, index) => {
+      input.addEventListener('keyup', (e) => {
+        if (e.key >= '0' && e.key <= '9') {
+          if (index < otpInputs.length - 1) otpInputs[index + 1].focus();
+        } else if (e.key === 'Backspace') {
+          if (index > 0) otpInputs[index - 1].focus();
+        }
+      });
+    });
+
+    // Home Flow
+    function selectStation(id) {
+      window.appState.stationId = id;
+      navigate('screen-product');
+    }
+
+    // Product Flow
+    function selectProductType(type, element) {
+      window.appState.product = type;
+      // UI update
+      document.querySelectorAll('#product-list > div').forEach(el => {
+        el.classList.remove('border-[#3ecf7a]', 'bg-[#3ecf7a]/10', 'shadow-[0_0_20px_rgba(62,207,122,0.1)]');
+        el.querySelector('div').classList.remove('bg-[#1f6b3e]/40');
+        el.querySelector('div').classList.add('bg-gray-800/50');
+        el.querySelector('span').classList.remove('text-white');
+        el.querySelector('span').classList.add('text-gray-300');
+        el.querySelector('i').classList.remove('text-[#3ecf7a]');
+        el.querySelector('i').classList.add('text-gray-400');
+      });
+      
+      element.classList.add('border-[#3ecf7a]', 'bg-[#3ecf7a]/10', 'shadow-[0_0_20px_rgba(62,207,122,0.1)]');
+      element.querySelector('div').classList.remove('bg-gray-800/50');
+      element.querySelector('div').classList.add('bg-[#1f6b3e]/40');
+      element.querySelector('span').classList.remove('text-gray-300');
+      element.querySelector('span').classList.add('text-white');
+      element.querySelector('i').classList.remove('text-gray-400');
+      element.querySelector('i').classList.add('text-[#3ecf7a]');
+    }
+
+    // Handle variant selection
+    document.querySelectorAll('.variant-picker input').forEach(input => {
+      input.addEventListener('change', (e) => {
+        // Reset all styles
+        document.querySelectorAll('.variant-picker > div').forEach(div => {
+          div.classList.remove('border-[#3ecf7a]', 'bg-[#3ecf7a]/10', 'shadow-[inset_0_0_0_1px_#3ecf7a]');
+        });
+        // Apply active styles
+        if (e.target.checked) {
+          e.target.nextElementSibling.classList.add('border-[#3ecf7a]', 'bg-[#3ecf7a]/10', 'shadow-[inset_0_0_0_1px_#3ecf7a]');
+          window.appState.quantity = parseInt(e.target.value);
+          window.appState.price = parseInt(e.target.dataset.price);
+          document.getElementById('total-price-display').innerText = `₹${window.appState.price}`;
+        }
+      });
+    });
+
+    // QR Generation
+    function generateQR() {
+      const sessionId = 'ses_' + Math.random().toString(36).substring(2, 9) + Date.now().toString(36);
+      window.appState.sessionId = sessionId;
+      
+      const payload = {
+        sessionId: sessionId,
+        userId: window.appState.userId,
+        product: window.appState.product,
+        quantity: window.appState.quantity,
+        timestamp: Date.now(),
+        expiry: Date.now() + 90000 // 90 seconds
+      };
+
+      // Generate QR
+      document.getElementById('qrcode').innerHTML = "";
+      new QRCode(document.getElementById('qrcode'), {
+        text: JSON.stringify(payload),
+        width: 300,
+        height: 300,
+        colorDark: "#000000",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.M
+      });
+
+      document.getElementById('display-session-id').innerText = sessionId.substring(0, 15) + '...';
+      
+      // Write to Firebase if available
+      if (window.db && window.ref && window.set) {
+        const sessionRef = window.ref(window.db, 'sessions/' + sessionId);
+        window.set(sessionRef, {
+          ...payload,
+          status: 'waiting',
+          progress: 0
+        }).then(() => {
+          console.log("Session written to Firebase RTDB");
+          // Listen for status changes
+          window.unsubSession = window.onValue(sessionRef, (snapshot) => {
+            const data = snapshot.val();
+            if (data) handleSessionStatusUpdate(data);
+          });
+        }).catch(err => {
+          console.warn("Firebase write failed, using local mock only", err);
+        });
+      }
+
+      navigate('screen-qr');
+    }
+
+    // Session Status Handling
+    function handleSessionStatusUpdate(data) {
+      if (data.status === 'dispensing') {
+        if (!document.getElementById('screen-waiting').classList.contains('active')) {
+          navigate('screen-waiting');
+          document.getElementById('dispense-product-name').innerText = data.product;
+          document.getElementById('dispense-target-vol').innerText = data.quantity;
+        }
+        
+        // Update progress UI
+        const progress = data.progress || 0;
+        document.getElementById('dispense-fill').style.height = `${progress}%`;
+        document.getElementById('dispense-percentage').innerText = `${progress}%`;
+        document.getElementById('dispense-current-vol').innerText = Math.round((progress / 100) * data.quantity);
+        
+      } else if (data.status === 'complete') {
+        document.getElementById('dispense-fill').style.height = `100%`;
+        document.getElementById('dispense-percentage').innerText = `100%`;
+        document.getElementById('dispense-current-vol').innerText = data.quantity;
+        
+        // Show proceed to payment button instead of auto-navigating
+        document.getElementById('btn-proceed-payment').classList.remove('hidden');
+        
+        // Populate Payment Screen data in background
+        document.getElementById('pay-product-name').innerText = data.product;
+        document.getElementById('pay-qty').innerText = data.quantity;
+        document.getElementById('pay-amount').innerText = `₹${window.appState.price}`;
+        
+        // Setup UPI Link
+        const upiUrl = `upi://pay?pa=9214567907@ptsbi&pn=RefillX&am=${window.appState.price}&cu=INR&tn=RefillX+Refill`;
+        document.getElementById('upi-link').href = upiUrl;
+      }
+    }
+    
+    function goToPayment() {
+      navigate('screen-payment');
+    }
+
+    // Demo Kiosk Scan Simulation (updates DB or local state)
+    function simulateKioskScan() {
+      if (!window.appState.sessionId) return;
+      
+      let p = 0;
+      
+      if (window.db && window.ref && window.update) {
+        const sessionRef = window.ref(window.db, 'sessions/' + window.appState.sessionId);
+        window.update(sessionRef, { status: 'dispensing', progress: 0 });
+        
+        const interval = setInterval(() => {
+          p += 10;
+          if (p > 100) {
+            clearInterval(interval);
+            window.update(sessionRef, { status: 'complete', progress: 100 });
+          } else {
+            window.update(sessionRef, { progress: p });
+          }
+        }, 500);
+      } else {
+        // Local Mock Fallback if Firebase fails
+        handleSessionStatusUpdate({ status: 'dispensing', product: window.appState.product, quantity: window.appState.quantity, progress: 0 });
+        const interval = setInterval(() => {
+          p += 10;
+          if (p > 100) {
+            clearInterval(interval);
+            handleSessionStatusUpdate({ status: 'complete', product: window.appState.product, quantity: window.appState.quantity, progress: 100 });
+          } else {
+            handleSessionStatusUpdate({ status: 'dispensing', product: window.appState.product, quantity: window.appState.quantity, progress: p });
+          }
+        }, 500);
+      }
+    }
+
+    // Payment Logic
+    function handleUpiClick(e) {
+      // DO NOT prevent default. The browser must follow the native anchor tag for upi:// intents to work reliably.
+      
+      // Show success screen after 3s
+      setTimeout(() => {
+        document.getElementById('pts-earned').innerText = Math.floor(window.appState.quantity / 100);
+        navigate('screen-success');
+      }, 3000);
+    }
+
+  </script>
+</body>
+</html>

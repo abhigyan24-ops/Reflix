@@ -1,0 +1,29 @@
+{
+  "users": {
+    "usr_abhig99": {
+      "name": "Abhishek Gupta",
+      "phone": "+919876543210",
+      "walletBalance": 420.50,
+      "ecoPoints": 1250,
+      "tier": "Eco-Hero"
+    }
+  },
+  "dispensers": {
+    "disp_001": {
+      "location": "Sector 62, Noida",
+      "productType": "Mineral Water",
+      "stockLevel": 82,
+      "status": "Active"
+    }
+  },
+  "transactions": {
+    "txn_001": {
+      "uid": "usr_abhig99",
+      "machineId": "disp_001",
+      "volume": "500 ml",
+      "cost": 15.00,
+      "timestamp": 1716800000,
+      "receiptUrl": "https://storage.googleapis.com/refillx-smart.appspot.com/receipts/usr_abhig99/txn_001.pdf"
+    }
+  }
+}
