@@ -106,7 +106,7 @@ class KioskHandler(http.server.SimpleHTTPRequestHandler):
 
     def do_GET(self):
         parsed_path = urlparse(self.path)
-        
+
         # Original status endpoint for old logic (if any)
         if parsed_path.path == '/status':
             qs = parse_qs(parsed_path.query)
@@ -118,7 +118,7 @@ class KioskHandler(http.server.SimpleHTTPRequestHandler):
             self.send_header('Access-Control-Allow-Origin', '*')
             self.end_headers()
             self.wfile.write(json.dumps({'status': status}).encode('utf-8'))
-            
+
         # LOCAL CLOUD SERVER ENDPOINTS
         elif parsed_path.path == '/api/sync':
             # Returns the entire DB state
@@ -137,7 +137,7 @@ class KioskHandler(http.server.SimpleHTTPRequestHandler):
             self.send_header('Access-Control-Allow-Origin', '*')
             self.end_headers()
             self.wfile.write(json.dumps({'value': val}).encode('utf-8'))
-            
+
         else:
             super().do_GET()
 
@@ -150,16 +150,16 @@ class KioskHandler(http.server.SimpleHTTPRequestHandler):
 
     def do_POST(self):
         parsed_path = urlparse(self.path)
-        
+
         if parsed_path.path in ['/api/set', '/api/update', '/api/push']:
             content_length = int(self.headers['Content-Length'])
             post_data = self.rfile.read(content_length)
-            
+
             try:
                 data = json.loads(post_data.decode('utf-8'))
                 path = data.get('path', '')
                 value = data.get('data')
-                
+
                 with db_lock:
                     if parsed_path.path == '/api/set':
                         if path == '/':
@@ -167,7 +167,7 @@ class KioskHandler(http.server.SimpleHTTPRequestHandler):
                             DB_STATE = value
                         else:
                             set_by_path(DB_STATE, path, value)
-                            
+
                     elif parsed_path.path == '/api/update':
                         # update implies merging at the specific path
                         curr = get_by_path(DB_STATE, path)
@@ -179,20 +179,20 @@ class KioskHandler(http.server.SimpleHTTPRequestHandler):
                                 deep_update(curr, value)
                             else:
                                 set_by_path(DB_STATE, path, value)
-                                
+
                     elif parsed_path.path == '/api/push':
                         curr = get_by_path(DB_STATE, path)
                         if curr is None or not isinstance(curr, dict):
                             set_by_path(DB_STATE, path, {})
                             curr = get_by_path(DB_STATE, path)
-                        
+
                         import time
                         push_id = "-L" + str(int(time.time() * 1000)) + "X"
                         curr[push_id] = value
-                
+
                 # Async save
                 threading.Thread(target=save_db).start()
-                
+
                 self.send_response(200)
                 self.send_header('Content-type', 'application/json')
                 self.send_header('Access-Control-Allow-Origin', '*')
@@ -202,7 +202,194 @@ class KioskHandler(http.server.SimpleHTTPRequestHandler):
                 print("API ERROR:", e)
                 self.send_response(500)
                 self.end_headers()
-                
+
+        elif parsed_path.path == '/api/call/finalizePayment':
+            content_length = int(self.headers['Content-Length'])
+            post_data = self.rfile.read(content_length)
+            try:
+                payload = json.loads(post_data.decode('utf-8')).get('data', {})
+                sid = payload.get('sid')
+                uid = payload.get('uid')
+                use_points = payload.get('usePoints', False)
+                client_total = payload.get('clientTotal', 0)
+
+                with db_lock:
+                    session = get_by_path(DB_STATE, f'sessions/{sid}')
+                    if not session:
+                        raise Exception("Session not found")
+                    user = get_by_path(DB_STATE, f'users/{uid}')
+                    if not user:
+                        raise Exception("User not found")
+
+                    order_total = session.get('order', {}).get('amt', session.get('amt', 0))
+                    points_balance = user.get('pointsBalance', 0)
+                    points_redeemed = 0
+
+                    if use_points and points_balance > 0:
+                        points_redeemed = min(points_balance * 0.02, order_total)
+                        user['pointsBalance'] -= (points_redeemed / 0.02)
+
+                    final_amount = max(0, order_total - points_redeemed)
+
+                    qty = session.get('qty', 0)
+                    points_earned = int(qty / 10)
+                    user['pointsBalance'] = user.get('pointsBalance', 0) + points_earned
+
+                    session['status'] = 'paid'
+                    session['finalAmount'] = final_amount
+                    session['pointsRedeemed'] = points_redeemed
+                    session['pointsEarned'] = points_earned
+
+                    history = user.get('history', {})
+                    import time
+                    import uuid
+                    txn_id = "TXN-" + str(uuid.uuid4())[:8].upper()
+                    history[txn_id] = {
+                        'timestamp': int(time.time() * 1000),
+                        'quantity': qty,
+                        'productName': session.get('productName', 'Product'),
+                        'amountPaid': final_amount,
+                        'pointsRedeemed': points_redeemed,
+                        'pointsEarned': points_earned
+                    }
+                    user['history'] = history
+
+                threading.Thread(target=save_db).start()
+
+                self.send_response(200)
+                self.send_header('Content-type', 'application/json')
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.end_headers()
+                self.wfile.write(json.dumps({'success': True}).encode('utf-8'))
+            except Exception as e:
+                self.send_response(500)
+                self.send_header('Content-type', 'application/json')
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.end_headers()
+                self.wfile.write(json.dumps({'error': str(e)}).encode('utf-8'))
+
+        elif parsed_path.path == '/api/call/sendEmailOtp':
+            content_length = int(self.headers['Content-Length'])
+            post_data = self.rfile.read(content_length)
+            try:
+                payload = json.loads(post_data.decode('utf-8')).get('data', {})
+                email = payload.get('email')
+                if not email: raise Exception("Email required")
+
+                import random, time
+                otp = str(random.randint(100000, 999999))
+
+                with db_lock:
+                    otps = get_by_path(DB_STATE, 'emailOtps')
+                    if not otps:
+                        set_by_path(DB_STATE, 'emailOtps', {})
+                        otps = get_by_path(DB_STATE, 'emailOtps')
+                    otps[email] = {
+                        'otp': otp,
+                        'expiresAt': int(time.time() * 1000) + 600000  # 10 mins
+                    }
+                threading.Thread(target=save_db).start()
+
+                msg = MIMEMultipart()
+                msg['From'] = f"RefillX <{SENDER_EMAIL}>"
+                msg['To'] = email
+                msg['Subject'] = f"Your RefillX Login Code: {otp}"
+
+                html_content = f"<html><body><h2>Your RefillX Login Code</h2><p>Your 6-digit code is: <strong>{otp}</strong></p><p>This code will expire in 10 minutes.</p></body></html>"
+                msg.attach(MIMEText(html_content, 'html'))
+
+                server = smtplib.SMTP('smtp.gmail.com', 587)
+                server.starttls()
+                server.login(SENDER_EMAIL, SENDER_PASSWORD)
+                server.send_message(msg)
+                server.quit()
+
+                self.send_response(200)
+                self.send_header('Content-type', 'application/json')
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.end_headers()
+                self.wfile.write(json.dumps({'success': True}).encode('utf-8'))
+            except Exception as e:
+                self.send_response(500)
+                self.send_header('Content-type', 'application/json')
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.end_headers()
+                self.wfile.write(json.dumps({'error': str(e)}).encode('utf-8'))
+
+        elif parsed_path.path == '/api/call/verifyEmailOtp':
+            content_length = int(self.headers['Content-Length'])
+            post_data = self.rfile.read(content_length)
+            try:
+                payload = json.loads(post_data.decode('utf-8')).get('data', {})
+                email = payload.get('email')
+                code = payload.get('code')
+                old_uid = payload.get('oldUid')
+                name = payload.get('name')
+                mobile = payload.get('mobile')
+
+                with db_lock:
+                    otps = get_by_path(DB_STATE, 'emailOtps')
+                    if not otps or email not in otps:
+                        raise Exception("No OTP found")
+
+                    import time
+                    otp_data = otps[email]
+                    if int(time.time() * 1000) > otp_data['expiresAt']:
+                        raise Exception("OTP Expired")
+
+                    if otp_data['otp'] != code:
+                        raise Exception("Invalid OTP")
+
+                    del otps[email]
+
+                    users = get_by_path(DB_STATE, 'users')
+                    if not users:
+                        set_by_path(DB_STATE, 'users', {})
+                        users = get_by_path(DB_STATE, 'users')
+
+                    existing_uid = None
+                    for uid, udata in users.items():
+                        if udata.get('email') == email:
+                            existing_uid = uid
+                            break
+
+                    if existing_uid:
+                        user_uid = existing_uid
+                        users[user_uid]['name'] = name
+                        users[user_uid]['mobile'] = mobile
+                    else:
+                        import uuid
+                        user_uid = "UID-" + str(uuid.uuid4())[:8].upper()
+                        users[user_uid] = {
+                            'email': email,
+                            'name': name,
+                            'mobile': mobile,
+                            'pointsBalance': 0,
+                            'history': {}
+                        }
+
+                    if old_uid and old_uid != user_uid and old_uid in users:
+                        old_user = users[old_uid]
+                        users[user_uid]['pointsBalance'] = users[user_uid].get('pointsBalance', 0) + old_user.get('pointsBalance', 0)
+                        history = users[user_uid].get('history', {})
+                        history.update(old_user.get('history', {}))
+                        users[user_uid]['history'] = history
+                        del users[old_uid]
+
+                threading.Thread(target=save_db).start()
+
+                self.send_response(200)
+                self.send_header('Content-type', 'application/json')
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.end_headers()
+                self.wfile.write(json.dumps({'success': True, 'uid': user_uid, 'token': 'mock-custom-token', 'user': users[user_uid]}).encode('utf-8'))
+            except Exception as e:
+                self.send_response(500)
+                self.send_header('Content-type', 'application/json')
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.end_headers()
+                self.wfile.write(json.dumps({'error': str(e)}).encode('utf-8'))
+
         elif parsed_path.path == '/send-receipt':
             content_length = int(self.headers['Content-Length'])
             post_data = self.rfile.read(content_length)
@@ -215,12 +402,12 @@ class KioskHandler(http.server.SimpleHTTPRequestHandler):
                 price = data.get('price')
                 date_time = data.get('date_time')
                 txn = data.get('txn')
-                
+
                 msg = MIMEMultipart()
                 msg['From'] = f"RefillX Station <{SENDER_EMAIL}>"
                 msg['To'] = recipient
                 msg['Subject'] = f"Your RefillX Receipt: {product} ({volume})"
-                
+
                 html_content = f"""
                 <html>
                   <body style="font-family: Arial, sans-serif; background-color: #060f09; color: #ffffff; padding: 40px; text-align: center;">
@@ -248,7 +435,7 @@ class KioskHandler(http.server.SimpleHTTPRequestHandler):
                 server.login(SENDER_EMAIL, SENDER_PASSWORD)
                 server.send_message(msg)
                 server.quit()
-                
+
                 self.send_response(200)
                 self.send_header('Content-type', 'application/json')
                 self.end_headers()
