@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -10,158 +11,1042 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
-    <style>
+  <style>
     :root {
-      --bg: #060f09; --green-bright: #3ecf7a; --green-accent: #2d9e5f;
-      --amber: #f0b429; --red: #ff4d4d; --text: #ffffff; --panel: #0a170e;
+      --bg: #060f09;
+      --green-bright: #3ecf7a;
+      --green-accent: #2d9e5f;
+      --amber: #f0b429;
+      --red: #ff4d4d;
+      --text: #ffffff;
+      --panel: #0a170e;
     }
-    * { box-sizing: border-box; user-select: none; -webkit-user-drag: none; }
-    body { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; background-color: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; display: flex; flex-direction: column; }
-    
-    #top-bar { height: 40px; background: rgba(0,0,0,0.8); border-bottom: 1px solid var(--green-accent); display: flex; justify-content: space-between; align-items: center; padding: 0 20px; font-size: 14px; font-weight: bold; z-index: 100; }
-    .online-badge { background: var(--green-accent); color: #000; padding: 2px 8px; border-radius: 12px; font-size: 11px; }
-    #bottom-bar { height: 50px; background: rgba(0,0,0,0.8); border-top: 1px solid var(--green-accent); display: flex; justify-content: space-between; align-items: center; padding: 0 20px; font-size: 14px; color: #888; z-index: 100; }
-    
-    #screen-container { flex: 1; position: relative; overflow: hidden; }
-    .screen { position: absolute; inset: 0; padding: 40px; display: flex; flex-direction: column; opacity: 0; pointer-events: none; transition: opacity 300ms ease, transform 300ms ease; transform: translateY(20px); }
-    .screen.active { opacity: 1; pointer-events: auto; transform: translateY(0); }
-    
-    .btn { min-height: 80px; border-radius: 16px; font-size: 24px; font-weight: 900; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.1s, opacity 0.2s; border: none; text-align: center; }
-    .btn:active { transform: scale(0.95); }
-    .btn-green { background: var(--green-bright); color: #000; box-shadow: 0 0 20px rgba(62,207,122,0.3); }
-    .btn-outline { background: transparent; border: 3px solid var(--green-accent); color: var(--green-bright); }
-    .btn-red { background: var(--red); color: #fff; box-shadow: 0 0 20px rgba(255,77,77,0.3); }
-    .btn:disabled { opacity: 0.3; cursor: not-allowed; transform: none; box-shadow: none; }
-    
-    .particle { position: absolute; background: var(--green-bright); border-radius: 50%; opacity: 0.2; animation: float 10s infinite linear; }
-    @keyframes float { 0% { transform: translateY(100vh); } 100% { transform: translateY(-100px); } }
-    .stat-card { position: absolute; width: 100%; transition: opacity 0.5s, transform 0.5s; opacity: 0; transform: translateX(50px); }
-    .stat-card.active { opacity: 1; transform: translateX(0); }
-    .pulse-glow { animation: pulse 2s infinite alternate; }
-    @keyframes pulse { 0% { box-shadow: 0 0 10px rgba(62,207,122,0.2); } 100% { box-shadow: 0 0 40px rgba(62,207,122,0.6); } }
-    
-    .sonar-wave { position: absolute; border: 4px solid var(--green-bright); border-radius: 50%; animation: sonar 2s infinite ease-out; opacity: 0; }
-    .sonar-wave:nth-child(2) { animation-delay: 1s; }
-    @keyframes sonar { 0% { width: 50px; height: 50px; opacity: 1; } 100% { width: 300px; height: 300px; opacity: 0; } }
-    
-    #video-box { width: 100%; max-width: 800px; aspect-ratio: 4/3; margin: 0 auto; position: relative; border-radius: 30px; overflow: hidden; background: #000; border: 4px solid #222; }
-    #webcam { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; display: block; visibility: visible; opacity: 1; transform: none; }
-    #overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; opacity: 0; pointer-events: none; }
-    .scan-bracket { position: absolute; width: 60px; height: 60px; border: 8px solid var(--green-bright); transition: 0.3s; }
-    .br-tl { top: 20px; left: 20px; border-right: none; border-bottom: none; border-radius: 16px 0 0 0; }
-    .br-tr { top: 20px; right: 20px; border-left: none; border-bottom: none; border-radius: 0 16px 0 0; }
-    .br-bl { bottom: 20px; left: 20px; border-right: none; border-top: none; border-radius: 0 0 0 16px; }
-    .br-br { bottom: 20px; right: 20px; border-left: none; border-top: none; border-radius: 0 0 16px 0; }
-    .laser { position: absolute; width: calc(100% - 40px); height: 4px; background: red; left: 20px; box-shadow: 0 0 15px red; animation: scan 2s infinite linear; z-index: 15; }
-    @keyframes scan { 0% { top: 20px; } 50% { top: calc(100% - 24px); } 100% { top: 20px; } }
-    .shake { animation: shake 0.4s; border-color: var(--red) !important; }
-    @keyframes shake { 0%,100%{transform:translateX(0);} 25%{transform:translateX(-10px);} 75%{transform:translateX(10px);} }
-    
-    .checklist-item { font-size: 24px; margin-bottom: 20px; display: flex; align-items: center; opacity: 0.3; transition: 0.3s; }
-    .checklist-item.active { opacity: 1; }
-    .checklist-item.done { opacity: 0.8; color: var(--green-bright); }
-    .check-icon { width: 30px; margin-right: 15px; opacity: 0; }
-    .checklist-item.done .check-icon { opacity: 1; }
-    
-    .dispense-layout { display: flex; gap: 40px; height: 100%; }
-    .machine-visual { flex: 1; background: var(--panel); border-radius: 30px; position: relative; display: flex; flex-direction: column; align-items: center; padding: 20px; }
-    .machine-tank { width: 180px; height: 180px; border: 6px solid #444; border-radius: 20px 20px 4px 4px; position: relative; overflow: hidden; background: #000; }
-    .machine-liquid { position: absolute; bottom: 0; width: 100%; height: 80%; background: #0ea5e9; transition: height 0.2s linear; }
-    .machine-wave { position: absolute; top: -10px; left: -50%; width: 200%; height: 20px; background: rgba(255,255,255,0.2); border-radius: 50%; animation: wave 1s infinite linear; }
-    @keyframes wave { 0% { transform: translateX(0) } 100% { transform: translateX(25%) } }
-    .machine-pipe { width: 20px; height: 80px; background: #333; margin: 0 auto; z-index: 10; position: relative; }
-    .solenoid { position: absolute; top: 30px; left: -15px; width: 50px; height: 20px; background: var(--red); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; }
-    .solenoid.open { background: var(--green-bright); color: #000; }
-    .machine-nozzle { width: 40px; height: 20px; background: #555; border-radius: 0 0 10px 10px; margin: 0 auto; z-index: 10; position: relative; }
-    .stream { width: 12px; height: 0; background: #0ea5e9; position: absolute; left: 50%; transform: translateX(-6px); top: 300px; z-index: 5; opacity: 0.8; transition: height 0.1s; }
-    .droplet { position: absolute; width: 12px; height: 20px; background: #0ea5e9; border-radius: 50%; left: 50%; transform: translateX(-6px); top: 300px; opacity: 0; }
-    @keyframes dropFall { 0% { top: 300px; opacity: 1; } 100% { top: 550px; opacity: 0; } }
-    .machine-bottle { width: 120px; height: 160px; border: 4px solid rgba(255,255,255,0.3); border-top: none; border-radius: 0 0 16px 16px; margin: 60px auto 0 auto; position: relative; overflow: hidden; }
-    .bottle-liquid { position: absolute; bottom: 0; width: 100%; height: 0%; background: #0ea5e9; transition: height 0.2s linear; }
-    
-    .telemetry-panel { flex: 1; display: flex; flex-direction: column; gap: 20px; }
-    .gauge-circle { stroke-dasharray: 628; stroke-dashoffset: 628; transition: stroke-dashoffset 0.2s linear; }
-    .data-box { background: var(--panel); border-radius: 20px; padding: 20px; display: flex; align-items: center; justify-content: space-between; }
-    .data-val { font-size: 32px; font-weight: 900; color: var(--green-bright); font-family: monospace; }
-    .sparkline { width: 100%; height: 60px; fill: none; stroke: var(--green-bright); stroke-width: 3; }
-    
+
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-drag: none;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #top-bar {
+      height: 40px;
+      background: rgba(0, 0, 0, 0.8);
+      border-bottom: 1px solid var(--green-accent);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 20px;
+      font-size: 14px;
+      font-weight: bold;
+      z-index: 100;
+    }
+
+    .online-badge {
+      background: var(--green-accent);
+      color: #000;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+    }
+
+    #bottom-bar {
+      height: 50px;
+      background: rgba(0, 0, 0, 0.8);
+      border-top: 1px solid var(--green-accent);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 20px;
+      font-size: 14px;
+      color: #888;
+      z-index: 100;
+    }
+
+    #screen-container {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .screen {
+      position: absolute;
+      inset: 0;
+      padding: 40px;
+      display: flex;
+      flex-direction: column;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 300ms ease, transform 300ms ease;
+      transform: translateY(20px);
+    }
+
+    .screen.active {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0);
+    }
+
+    .btn {
+      min-height: 80px;
+      border-radius: 16px;
+      font-size: 24px;
+      font-weight: 900;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: transform 0.1s, opacity 0.2s;
+      border: none;
+      text-align: center;
+    }
+
+    .btn:active {
+      transform: scale(0.95);
+    }
+
+    .btn-green {
+      background: var(--green-bright);
+      color: #000;
+      box-shadow: 0 0 20px rgba(62, 207, 122, 0.3);
+    }
+
+    .btn-outline {
+      background: transparent;
+      border: 3px solid var(--green-accent);
+      color: var(--green-bright);
+    }
+
+    .btn-red {
+      background: var(--red);
+      color: #fff;
+      box-shadow: 0 0 20px rgba(255, 77, 77, 0.3);
+    }
+
+    .btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .particle {
+      position: absolute;
+      background: var(--green-bright);
+      border-radius: 50%;
+      opacity: 0.2;
+      animation: float 10s infinite linear;
+    }
+
+    @keyframes float {
+      0% {
+        transform: translateY(100vh);
+      }
+
+      100% {
+        transform: translateY(-100px);
+      }
+    }
+
+    .stat-card {
+      position: absolute;
+      width: 100%;
+      transition: opacity 0.5s, transform 0.5s;
+      opacity: 0;
+      transform: translateX(50px);
+    }
+
+    .stat-card.active {
+      opacity: 1;
+      transform: translateX(0);
+    }
+
+    .pulse-glow {
+      animation: pulse 2s infinite alternate;
+    }
+
+    @keyframes pulse {
+      0% {
+        box-shadow: 0 0 10px rgba(62, 207, 122, 0.2);
+      }
+
+      100% {
+        box-shadow: 0 0 40px rgba(62, 207, 122, 0.6);
+      }
+    }
+
+    .sonar-wave {
+      position: absolute;
+      border: 4px solid var(--green-bright);
+      border-radius: 50%;
+      animation: sonar 2s infinite ease-out;
+      opacity: 0;
+    }
+
+    .sonar-wave:nth-child(2) {
+      animation-delay: 1s;
+    }
+
+    @keyframes sonar {
+      0% {
+        width: 50px;
+        height: 50px;
+        opacity: 1;
+      }
+
+      100% {
+        width: 300px;
+        height: 300px;
+        opacity: 0;
+      }
+    }
+
+    #video-box {
+      width: 100%;
+      max-width: 800px;
+      aspect-ratio: 4/3;
+      margin: 0 auto;
+      position: relative;
+      border-radius: 30px;
+      overflow: hidden;
+      background: #000;
+      border: 4px solid #222;
+    }
+
+    #webcam {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      z-index: 1;
+      display: block;
+      visibility: visible;
+      opacity: 1;
+      transform: none;
+    }
+
+    #overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 2;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .scan-bracket {
+      position: absolute;
+      width: 60px;
+      height: 60px;
+      border: 8px solid var(--green-bright);
+      transition: 0.3s;
+    }
+
+    .br-tl {
+      top: 20px;
+      left: 20px;
+      border-right: none;
+      border-bottom: none;
+      border-radius: 16px 0 0 0;
+    }
+
+    .br-tr {
+      top: 20px;
+      right: 20px;
+      border-left: none;
+      border-bottom: none;
+      border-radius: 0 16px 0 0;
+    }
+
+    .br-bl {
+      bottom: 20px;
+      left: 20px;
+      border-right: none;
+      border-top: none;
+      border-radius: 0 0 0 16px;
+    }
+
+    .br-br {
+      bottom: 20px;
+      right: 20px;
+      border-left: none;
+      border-top: none;
+      border-radius: 0 0 16px 0;
+    }
+
+    .laser {
+      position: absolute;
+      width: calc(100% - 40px);
+      height: 4px;
+      background: red;
+      left: 20px;
+      box-shadow: 0 0 15px red;
+      animation: scan 2s infinite linear;
+      z-index: 15;
+    }
+
+    @keyframes scan {
+      0% {
+        top: 20px;
+      }
+
+      50% {
+        top: calc(100% - 24px);
+      }
+
+      100% {
+        top: 20px;
+      }
+    }
+
+    .shake {
+      animation: shake 0.4s;
+      border-color: var(--red) !important;
+    }
+
+    @keyframes shake {
+
+      0%,
+      100% {
+        transform: translateX(0);
+      }
+
+      25% {
+        transform: translateX(-10px);
+      }
+
+      75% {
+        transform: translateX(10px);
+      }
+    }
+
+    .checklist-item {
+      font-size: 24px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      opacity: 0.3;
+      transition: 0.3s;
+    }
+
+    .checklist-item.active {
+      opacity: 1;
+    }
+
+    .checklist-item.done {
+      opacity: 0.8;
+      color: var(--green-bright);
+    }
+
+    .check-icon {
+      width: 30px;
+      margin-right: 15px;
+      opacity: 0;
+    }
+
+    .checklist-item.done .check-icon {
+      opacity: 1;
+    }
+
+    .dispense-layout {
+      display: flex;
+      gap: 40px;
+      height: 100%;
+    }
+
+    .machine-visual {
+      flex: 1;
+      background: var(--panel);
+      border-radius: 30px;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .machine-tank {
+      width: 180px;
+      height: 180px;
+      border: 6px solid #444;
+      border-radius: 20px 20px 4px 4px;
+      position: relative;
+      overflow: hidden;
+      background: #000;
+    }
+
+    .machine-liquid {
+      position: absolute;
+      bottom: 0;
+      width: 100%;
+      height: 80%;
+      background: #0ea5e9;
+      transition: height 0.2s linear;
+    }
+
+    .machine-wave {
+      position: absolute;
+      top: -10px;
+      left: -50%;
+      width: 200%;
+      height: 20px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 50%;
+      animation: wave 1s infinite linear;
+    }
+
+    @keyframes wave {
+      0% {
+        transform: translateX(0)
+      }
+
+      100% {
+        transform: translateX(25%)
+      }
+    }
+
+    .machine-pipe {
+      width: 20px;
+      height: 80px;
+      background: #333;
+      margin: 0 auto;
+      z-index: 10;
+      position: relative;
+    }
+
+    .solenoid {
+      position: absolute;
+      top: 30px;
+      left: -15px;
+      width: 50px;
+      height: 20px;
+      background: var(--red);
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: bold;
+    }
+
+    .solenoid.open {
+      background: var(--green-bright);
+      color: #000;
+    }
+
+    .machine-nozzle {
+      width: 40px;
+      height: 20px;
+      background: #555;
+      border-radius: 0 0 10px 10px;
+      margin: 0 auto;
+      z-index: 10;
+      position: relative;
+    }
+
+    .stream {
+      width: 12px;
+      height: 0;
+      background: #0ea5e9;
+      position: absolute;
+      left: 50%;
+      transform: translateX(-6px);
+      top: 300px;
+      z-index: 5;
+      opacity: 0.8;
+      transition: height 0.1s;
+    }
+
+    .droplet {
+      position: absolute;
+      width: 12px;
+      height: 20px;
+      background: #0ea5e9;
+      border-radius: 50%;
+      left: 50%;
+      transform: translateX(-6px);
+      top: 300px;
+      opacity: 0;
+    }
+
+    @keyframes dropFall {
+      0% {
+        top: 300px;
+        opacity: 1;
+      }
+
+      100% {
+        top: 550px;
+        opacity: 0;
+      }
+    }
+
+    .machine-bottle {
+      width: 120px;
+      height: 160px;
+      border: 4px solid rgba(255, 255, 255, 0.3);
+      border-top: none;
+      border-radius: 0 0 16px 16px;
+      margin: 60px auto 0 auto;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .bottle-liquid {
+      position: absolute;
+      bottom: 0;
+      width: 100%;
+      height: 0%;
+      background: #0ea5e9;
+      transition: height 0.2s linear;
+    }
+
+    .telemetry-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .gauge-circle {
+      stroke-dasharray: 628;
+      stroke-dashoffset: 628;
+      transition: stroke-dashoffset 0.2s linear;
+    }
+
+    .data-box {
+      background: var(--panel);
+      border-radius: 20px;
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .data-val {
+      font-size: 32px;
+      font-weight: 900;
+      color: var(--green-bright);
+      font-family: monospace;
+    }
+
+    .sparkline {
+      width: 100%;
+      height: 60px;
+      fill: none;
+      stroke: var(--green-bright);
+      stroke-width: 3;
+    }
+
     /* Camera Distance Detection UI (Screen 4) */
-    #cam-distance-layout { display: flex; gap: 40px; height: 100%; width: 100%; }
-    #cam-left-half { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
-    #cam-video-box { width: 100%; max-width: 500px; aspect-ratio: 4/3; border-radius: 30px; overflow: hidden; border: 4px solid var(--green-accent); position: relative; background: #000; }
-    #cam-video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
-    #cam-overlay { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 10; transform: scaleX(-1); }
-    #cam-status { position: absolute; bottom: 10px; left: 10px; font-size: 12px; color: #3ecf7a; background: rgba(0,0,0,0.7); padding: 4px 8px; border-radius: 8px; font-mono: true; }
-    #cam-right-half { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-    .cam-distance-display { font-size: 72px; font-weight: 900; font-family: monospace; color: #3ecf7a; margin: 20px 0; text-shadow: 0 0 20px rgba(62,207,122,0.5); }
-    .proximity-meter { width: 60px; height: 300px; background: #222; border: 4px solid #444; border-radius: 30px; position: relative; overflow: hidden; margin: 20px 0; }
-    .proximity-meter-fill { position: absolute; bottom: 0; width: 100%; height: 0%; background: linear-gradient(180deg, #ff4d4d 0%, #f0b429 40%, #3ecf7a 100%); transition: height 0.5s ease-out; }
-    .proximity-meter-mark { position: absolute; width: 100%; height: 2px; left: 0; background: rgba(255,255,255,0.3); font-size: 10px; color: #888; padding-left: 65px; }
-    .proximity-meter-label { position: absolute; right: -50px; font-size: 9px; font-weight: bold; }
-    .confirmation-ring { width: 120px; height: 120px; border-radius: 50%; border: 6px solid transparent; background: conic-gradient(#3ecf7a 0deg, #3ecf7a var(--ring-angle), #222 var(--ring-angle)) padding-box; padding: 6px; margin: 30px 0; display: flex; align-items: center; justify-content: center; }
-    .confirmation-ring-inner { width: 100%; height: 100%; border-radius: 50%; background: #0a170e; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #3ecf7a; font-size: 24px; }
-    .calibration-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 500; flex-direction: column; align-items: center; justify-content: center; }
-    .calibration-modal.active { display: flex; }
-    .calibration-content { background: var(--panel); padding: 40px; border-radius: 30px; border: 2px solid var(--green-bright); max-width: 600px; text-align: center; }
-    .instruction-graphic { display: flex; justify-content: center; align-items: flex-end; gap: 20px; margin: 30px 0; height: 150px; }
-    .ig-laptop { font-size: 60px; }
-    .ig-phone { font-size: 40px; animation: bob 2s ease-in-out infinite; }
-    @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
-    
-    .payment-box { background: var(--panel); border: 2px solid var(--green-bright); border-radius: 30px; padding: 50px; text-align: center; max-width: 600px; margin: 0 auto; box-shadow: 0 0 50px rgba(62,207,122,0.1); }
-    #qr-render { background: #fff; padding: 20px; border-radius: 20px; display: inline-block; margin: 30px 0; }
-    #qr-render img { display: block; width: 240px; height: 240px; }
-    
-    .receipt { background: #111; border: 2px dashed #444; padding: 40px; font-family: monospace; max-width: 500px; margin: 0 auto; color: #ccc; }
-    
-    @media print { 
-      body { background: white; color: black; }
-      #top-bar, #bottom-bar, #offline-banner, #maintenance-modal { display: none !important; }
-      .screen { display: none !important; }
-      #screen-9 { display: block !important; position: absolute; left: 0; top: 0; width: 100%; background: white; color: black; padding: 20px; }
-      .btn, .no-print { display: none !important; }
-      .receipt { border: none !important; color: black !important; background: white !important; }
-      .receipt * { color: black !important; }
+    #cam-distance-layout {
+      display: flex;
+      gap: 40px;
+      height: 100%;
+      width: 100%;
     }
-    
-    #maintenance-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 1000; display: none; flex-direction: column; padding: 40px; }
-    .pin-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; max-width: 300px; margin: 0 auto; }
-    .pin-btn { background: #222; border: 2px solid #444; border-radius: 50%; width: 80px; height: 80px; font-size: 32px; color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; }
-    
-    #offline-banner { position: absolute; top: 40px; left: 0; width: 100%; background: var(--amber); color: #000; text-align: center; padding: 5px; font-weight: bold; z-index: 90; display: none; }
-    .toast { position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%); background: #222; color: #fff; padding: 15px 30px; border-radius: 30px; z-index: 200; font-weight: bold; border: 2px solid var(--amber); display: none; }
-    
-    .checkmark { width: 120px; height: 120px; border-radius: 50%; display: block; stroke-width: 4; stroke: var(--green-bright); stroke-miterlimit: 10; margin: 0 auto 30px auto; }
-    .checkmark__circle { stroke-dasharray: 166; stroke-dashoffset: 166; stroke-width: 4; stroke-miterlimit: 10; stroke: var(--green-bright); fill: none; animation: stroke 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards; }
-    .checkmark__check { transform-origin: 50% 50%; stroke-dasharray: 48; stroke-dashoffset: 48; animation: stroke 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.8s forwards; }
-    @keyframes stroke { 100% { stroke-dashoffset: 0; } }
+
+    #cam-left-half {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    #cam-video-box {
+      width: 100%;
+      max-width: 500px;
+      aspect-ratio: 4/3;
+      border-radius: 30px;
+      overflow: hidden;
+      border: 4px solid var(--green-accent);
+      position: relative;
+      background: #000;
+    }
+
+    #cam-video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transform: scaleX(-1);
+    }
+
+    #cam-overlay {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 10;
+      transform: scaleX(-1);
+    }
+
+    #cam-status {
+      position: absolute;
+      bottom: 10px;
+      left: 10px;
+      font-size: 12px;
+      color: #3ecf7a;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 4px 8px;
+      border-radius: 8px;
+      font-mono: true;
+    }
+
+    #cam-right-half {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .cam-distance-display {
+      font-size: 72px;
+      font-weight: 900;
+      font-family: monospace;
+      color: #3ecf7a;
+      margin: 20px 0;
+      text-shadow: 0 0 20px rgba(62, 207, 122, 0.5);
+    }
+
+    .proximity-meter {
+      width: 60px;
+      height: 300px;
+      background: #222;
+      border: 4px solid #444;
+      border-radius: 30px;
+      position: relative;
+      overflow: hidden;
+      margin: 20px 0;
+    }
+
+    .proximity-meter-fill {
+      position: absolute;
+      bottom: 0;
+      width: 100%;
+      height: 0%;
+      background: linear-gradient(180deg, #ff4d4d 0%, #f0b429 40%, #3ecf7a 100%);
+      transition: height 0.5s ease-out;
+    }
+
+    .proximity-meter-mark {
+      position: absolute;
+      width: 100%;
+      height: 2px;
+      left: 0;
+      background: rgba(255, 255, 255, 0.3);
+      font-size: 10px;
+      color: #888;
+      padding-left: 65px;
+    }
+
+    .proximity-meter-label {
+      position: absolute;
+      right: -50px;
+      font-size: 9px;
+      font-weight: bold;
+    }
+
+    .confirmation-ring {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      border: 6px solid transparent;
+      background: conic-gradient(#3ecf7a 0deg, #3ecf7a var(--ring-angle), #222 var(--ring-angle)) padding-box;
+      padding: 6px;
+      margin: 30px 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .confirmation-ring-inner {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background: #0a170e;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      color: #3ecf7a;
+      font-size: 24px;
+    }
+
+    .calibration-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.95);
+      z-index: 500;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .calibration-modal.active {
+      display: flex;
+    }
+
+    .calibration-content {
+      background: var(--panel);
+      padding: 40px;
+      border-radius: 30px;
+      border: 2px solid var(--green-bright);
+      max-width: 600px;
+      text-align: center;
+    }
+
+    .instruction-graphic {
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      gap: 20px;
+      margin: 30px 0;
+      height: 150px;
+    }
+
+    .ig-laptop {
+      font-size: 60px;
+    }
+
+    .ig-phone {
+      font-size: 40px;
+      animation: bob 2s ease-in-out infinite;
+    }
+
+    @keyframes bob {
+
+      0%,
+      100% {
+        transform: translateY(0);
+      }
+
+      50% {
+        transform: translateY(-20px);
+      }
+    }
+
+    .payment-box {
+      background: var(--panel);
+      border: 2px solid var(--green-bright);
+      border-radius: 30px;
+      padding: 50px;
+      text-align: center;
+      max-width: 600px;
+      margin: 0 auto;
+      box-shadow: 0 0 50px rgba(62, 207, 122, 0.1);
+    }
+
+    #qr-render {
+      background: #fff;
+      padding: 20px;
+      border-radius: 20px;
+      display: inline-block;
+      margin: 30px 0;
+    }
+
+    #qr-render img {
+      display: block;
+      width: 240px;
+      height: 240px;
+    }
+
+    .receipt {
+      background: #111;
+      border: 2px dashed #444;
+      padding: 40px;
+      font-family: monospace;
+      max-width: 500px;
+      margin: 0 auto;
+      color: #ccc;
+    }
+
+    @media print {
+      body {
+        background: white;
+        color: black;
+      }
+
+      #top-bar,
+      #bottom-bar,
+      #offline-banner,
+      #maintenance-modal {
+        display: none !important;
+      }
+
+      .screen {
+        display: none !important;
+      }
+
+      #screen-9 {
+        display: block !important;
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        background: white;
+        color: black;
+        padding: 20px;
+      }
+
+      .btn,
+      .no-print {
+        display: none !important;
+      }
+
+      .receipt {
+        border: none !important;
+        color: black !important;
+        background: white !important;
+      }
+
+      .receipt * {
+        color: black !important;
+      }
+    }
+
+    #maintenance-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.95);
+      z-index: 1000;
+      display: none;
+      flex-direction: column;
+      padding: 40px;
+    }
+
+    .pin-pad {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 15px;
+      max-width: 300px;
+      margin: 0 auto;
+    }
+
+    .pin-btn {
+      background: #222;
+      border: 2px solid #444;
+      border-radius: 50%;
+      width: 80px;
+      height: 80px;
+      font-size: 32px;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    #offline-banner {
+      position: absolute;
+      top: 40px;
+      left: 0;
+      width: 100%;
+      background: var(--amber);
+      color: #000;
+      text-align: center;
+      padding: 5px;
+      font-weight: bold;
+      z-index: 90;
+      display: none;
+    }
+
+    .toast {
+      position: absolute;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #222;
+      color: #fff;
+      padding: 15px 30px;
+      border-radius: 30px;
+      z-index: 200;
+      font-weight: bold;
+      border: 2px solid var(--amber);
+      display: none;
+    }
+
+    .checkmark {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      display: block;
+      stroke-width: 4;
+      stroke: var(--green-bright);
+      stroke-miterlimit: 10;
+      margin: 0 auto 30px auto;
+    }
+
+    .checkmark__circle {
+      stroke-dasharray: 166;
+      stroke-dashoffset: 166;
+      stroke-width: 4;
+      stroke-miterlimit: 10;
+      stroke: var(--green-bright);
+      fill: none;
+      animation: stroke 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
+    }
+
+    .checkmark__check {
+      transform-origin: 50% 50%;
+      stroke-dasharray: 48;
+      stroke-dashoffset: 48;
+      animation: stroke 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.8s forwards;
+    }
+
+    @keyframes stroke {
+      100% {
+        stroke-dashoffset: 0;
+      }
+    }
 
     /* Radar UI */
-    .radar-circle { width: 300px; height: 300px; border-radius: 50%; position: relative; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle, rgba(10,23,14,1) 0%, rgba(0,0,0,1) 70%); margin: 0 auto; box-shadow: inset 0 0 40px rgba(62,207,122,0.1); }
-    .radar-ring { position: absolute; border: 1px solid rgba(62, 207, 122, 0.3); border-radius: 50%; animation: ping 3s cubic-bezier(0, 0, 0.2, 1) infinite; }
-    @keyframes ping { 75%, 100% { transform: scale(2); opacity: 0; } }
-    .dist-progress { transform: rotate(-90deg); stroke: #3ecf7a; transition: stroke-dashoffset 0.5s ease-out; }
-    
+    .radar-circle {
+      width: 300px;
+      height: 300px;
+      border-radius: 50%;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle, rgba(10, 23, 14, 1) 0%, rgba(0, 0, 0, 1) 70%);
+      margin: 0 auto;
+      box-shadow: inset 0 0 40px rgba(62, 207, 122, 0.1);
+    }
+
+    .radar-ring {
+      position: absolute;
+      border: 1px solid rgba(62, 207, 122, 0.3);
+      border-radius: 50%;
+      animation: ping 3s cubic-bezier(0, 0, 0.2, 1) infinite;
+    }
+
+    @keyframes ping {
+
+      75%,
+      100% {
+        transform: scale(2);
+        opacity: 0;
+      }
+    }
+
+    .dist-progress {
+      transform: rotate(-90deg);
+      stroke: #3ecf7a;
+      transition: stroke-dashoffset 0.5s ease-out;
+    }
+
     /* Horizontal Bar */
-    .prox-bar-container { width: 80%; max-width: 400px; height: 12px; background: #222; border-radius: 10px; position: relative; margin: 20px auto; overflow: hidden; }
-    .prox-bar-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #ff4b4b, #f0b429, #3ecf7a); transition: width 0.5s ease-out; }
-    .prox-indicator { position: absolute; top: -4px; width: 20px; height: 20px; background: #fff; border-radius: 50%; box-shadow: 0 0 10px rgba(0,0,0,0.5); transition: left 0.5s ease-out; transform: translateX(-50%); }
+    .prox-bar-container {
+      width: 80%;
+      max-width: 400px;
+      height: 12px;
+      background: #222;
+      border-radius: 10px;
+      position: relative;
+      margin: 20px auto;
+      overflow: hidden;
+    }
+
+    .prox-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #ff4b4b, #f0b429, #3ecf7a);
+      transition: width 0.5s ease-out;
+    }
+
+    .prox-indicator {
+      position: absolute;
+      top: -4px;
+      width: 20px;
+      height: 20px;
+      background: #fff;
+      border-radius: 50%;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+      transition: left 0.5s ease-out;
+      transform: translateX(-50%);
+    }
 
     /* Floor Plan */
-    .floor-plan { display: flex; justify-content: space-between; align-items: center; width: 60%; max-width: 300px; margin: 20px auto; position: relative; padding: 0 20px; }
-    .fp-line { position: absolute; top: 50%; left: 40px; right: 40px; border-top: 2px dashed #444; z-index: 1; }
-    .fp-icon { font-size: 2rem; z-index: 2; background: #000; padding: 5px; }
-    .fp-phone { transition: transform 0.5s ease-out; color: #fff; }
+    .floor-plan {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 60%;
+      max-width: 300px;
+      margin: 20px auto;
+      position: relative;
+      padding: 0 20px;
+    }
+
+    .fp-line {
+      position: absolute;
+      top: 50%;
+      left: 40px;
+      right: 40px;
+      border-top: 2px dashed #444;
+      z-index: 1;
+    }
+
+    .fp-icon {
+      font-size: 2rem;
+      z-index: 2;
+      background: #000;
+      padding: 5px;
+    }
+
+    .fp-phone {
+      transition: transform 0.5s ease-out;
+      color: #fff;
+    }
 
     /* OTP Boxes */
-    .otp-box { width: 70px; height: 90px; background: #111; border: 2px solid #333; border-radius: 15px; font-size: 3rem; font-family: monospace; font-weight: black; color: #fff; display: flex; align-items: center; justify-content: center; }
+    .otp-box {
+      width: 70px;
+      height: 90px;
+      background: #111;
+      border: 2px solid #333;
+      border-radius: 15px;
+      font-size: 3rem;
+      font-family: monospace;
+      font-weight: black;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
   </style>
 </head>
+
 <body>
   <div id="top-bar">
-    <div style="display: flex; align-items: center; gap: 10px;"><span class="text-2xl">🌿</span><span style="font-size: 18px; letter-spacing: 1px;">REFILLX <span style="color:#888; font-family:monospace;">RFX-001</span></span></div>
+    <div style="display: flex; align-items: center; gap: 10px;"><span class="text-2xl">🌿</span><span
+        style="font-size: 18px; letter-spacing: 1px;">REFILLX <span
+          style="color:#888; font-family:monospace;">RFX-001</span></span></div>
     <div id="clock" style="font-size: 18px; font-variant-numeric: tabular-nums;">--:--:--</div>
-    <div style="display: flex; align-items: center; gap: 15px;"><div style="font-size: 20px; cursor:pointer;" onclick="toggleWiFi()">📶</div><div class="online-badge" id="online-badge">ONLINE</div></div>
+    <div style="display: flex; align-items: center; gap: 15px;">
+      <div style="font-size: 20px; cursor:pointer;" onclick="toggleWiFi()">📶</div>
+      <div class="online-badge" id="online-badge">ONLINE</div>
+    </div>
   </div>
   <div id="offline-banner">OFFLINE - LIMITED FUNCTIONALITY</div>
 
@@ -169,41 +1054,57 @@
     <!-- SCREEN 1: IDLE -->
     <div id="screen-1" class="screen active">
       <div id="particles"></div>
-      <div style="position: absolute; bottom: 20px; left: 20px; width: 50px; height: 50px; opacity: 0; cursor: pointer; z-index: 50;" onclick="handleMaintTap()"></div>
+      <div
+        style="position: absolute; bottom: 20px; left: 20px; width: 50px; height: 50px; opacity: 0; cursor: pointer; z-index: 50;"
+        onclick="handleMaintTap()"></div>
       <div class="flex-1 flex flex-col items-center justify-center text-center">
-        <h1 class="text-8xl font-black text-[#3ecf7a] mb-6 tracking-tight pulse-glow" style="text-shadow: 0 0 30px rgba(62,207,122,0.4);">RefillX</h1>
+        <h1 class="text-8xl font-black text-[#3ecf7a] mb-6 tracking-tight pulse-glow"
+          style="text-shadow: 0 0 30px rgba(62,207,122,0.4);">RefillX</h1>
         <p class="text-4xl text-gray-300 font-bold mb-16">Smart Refills. Zero Waste.</p>
         <div style="position: relative; height: 100px; width: 100%; max-width: 600px; margin: 0 auto;">
-          <div class="stat-card active text-2xl font-bold text-[#86efac]" id="stat-1">♻ 3.5M tonnes plastic waste yearly in India</div>
-          <div class="stat-card text-2xl font-bold text-[#3ecf7a]" id="stat-2">💧 Save up to ₹200/month by refilling</div>
-          <div class="stat-card text-2xl font-bold text-[#6ee7b7]" id="stat-3">🌱 Every refill saves one plastic bottle</div>
+          <div class="stat-card active text-2xl font-bold text-[#86efac]" id="stat-1">♻ 3.5M tonnes plastic waste yearly
+            in India</div>
+          <div class="stat-card text-2xl font-bold text-[#3ecf7a]" id="stat-2">💧 Save up to ₹200/month by refilling
+          </div>
+          <div class="stat-card text-2xl font-bold text-[#6ee7b7]" id="stat-3">🌱 Every refill saves one plastic bottle
+          </div>
         </div>
       </div>
-      <button id="start-btn" class="btn btn-green w-full pulse-glow" style="margin-bottom: 20px; position: relative; z-index: 9999; cursor: pointer; pointer-events: auto;">TAP TO START</button>
+      <button id="start-btn" class="btn btn-green w-full pulse-glow"
+        style="margin-bottom: 20px; position: relative; z-index: 9999; cursor: pointer; pointer-events: auto;">TAP TO
+        START</button>
     </div>
 
     <!-- SCREEN 4: PLACE BOTTLE (Real GPS Distance) -->
     <div id="screen-4" class="screen">
-          <h2 class="text-4xl font-black mb-8" id="s4-title" data-i18n="screen4_title">Place your bottle under the nozzle</h2>
-          <div class="flex-1 flex flex-col items-center justify-center relative w-full">
-            <div class="w-64 h-64 rounded-full border-4 border-[var(--green-accent)] flex items-center justify-center relative mb-8">
-              <div class="absolute inset-0 rounded-full border-[var(--green-accent)] border-4 animate-ping opacity-20"></div>
-              <div class="text-6xl text-[var(--green-bright)] animate-bounce">↓</div>
-            </div>
-            <div class="text-3xl font-bold text-gray-400 mt-8 h-12" id="waiting-bottle" data-i18n="screen4_waiting">Waiting for bottle...</div>
+      <h2 class="text-4xl font-black mb-8" id="s4-title" data-i18n="screen4_title">Place your bottle under the nozzle
+      </h2>
+      <div class="flex-1 flex flex-col items-center justify-center relative w-full">
+        <div
+          class="w-64 h-64 rounded-full border-4 border-[var(--green-accent)] flex items-center justify-center relative mb-8">
+          <div class="absolute inset-0 rounded-full border-[var(--green-accent)] border-4 animate-ping opacity-20">
           </div>
+          <div class="text-6xl text-[var(--green-bright)] animate-bounce">↓</div>
         </div>
-        
-        <!-- SCREEN 5: QR SCAN -->
+        <div class="text-3xl font-bold text-gray-400 mt-8 h-12" id="waiting-bottle" data-i18n="screen4_waiting">Waiting
+          for bottle...</div>
+      </div>
+    </div>
+
+    <!-- SCREEN 5: QR SCAN -->
     <div id="screen-5" class="screen">
       <h2 class="text-4xl font-black mb-8 text-center">Scan your RefillX app QR code</h2>
       <div class="flex-1 flex flex-col justify-center">
         <div id="video-box">
-          <div class="scan-bracket br-tl"></div><div class="scan-bracket br-tr"></div>
-          <div class="scan-bracket br-bl"></div><div class="scan-bracket br-br"></div>
+          <div class="scan-bracket br-tl"></div>
+          <div class="scan-bracket br-tr"></div>
+          <div class="scan-bracket br-bl"></div>
+          <div class="scan-bracket br-br"></div>
           <div class="laser" id="qr-laser"></div>
-          <div id="cam-fps" class="absolute top-4 right-4 bg-black text-[#3ecf7a] font-mono p-1 rounded z-20">0 FPS</div>
-          <video id="webcam" autoplay muted playsinline webkit-playsinline disablepictureinpicture disableremoteplayback style="display:block; width:100%; height:100%; object-fit:cover; position:absolute; top:0; left:0; z-index:1; transform:none;"></video>
+          <div id="cam-fps" class="absolute top-4 right-4 bg-black text-[#3ecf7a] font-mono p-1 rounded z-20">0 FPS
+          </div>
+          <video id="webcam" autoplay muted playsinline webkit-playsinline disablepictureinpicture disableremoteplayback
+            style="display:block; width:100%; height:100%; object-fit:cover; position:absolute; top:0; left:0; z-index:1; transform:none;"></video>
           <canvas id="overlay"></canvas>
         </div>
         <p id="qr-error" class="text-2xl text-[var(--red)] font-bold text-center mt-8 h-8"></p>
@@ -224,8 +1125,11 @@
         <div class="checklist-item" id="chk-4"><span class="check-icon">✅</span>Checking session history...</div>
         <div class="checklist-item" id="chk-5"><span class="check-icon">✅</span>Authorising dispense command...</div>
       </div>
-      <div id="auth-success" class="w-full max-w-2xl bg-[var(--panel)] p-10 rounded-3xl border-2 border-[var(--green-bright)] hidden mt-8 text-center">
-        <div class="w-24 h-24 bg-[#3ecf7a] text-black rounded-full flex items-center justify-center text-4xl font-black mx-auto mb-4" id="auth-initials">DS</div>
+      <div id="auth-success"
+        class="w-full max-w-2xl bg-[var(--panel)] p-10 rounded-3xl border-2 border-[var(--green-bright)] hidden mt-8 text-center">
+        <div
+          class="w-24 h-24 bg-[#3ecf7a] text-black rounded-full flex items-center justify-center text-4xl font-black mx-auto mb-4"
+          id="auth-initials">DS</div>
         <h3 class="text-3xl font-bold mb-2" id="auth-name">Divyansh Singh</h3>
         <p class="text-[#f0b429] font-bold mb-8">★ Gold Tier • <span id="auth-email"></span></p>
         <div class="bg-[#000] p-6 rounded-2xl flex justify-between text-xl font-bold mb-8">
@@ -234,7 +1138,8 @@
         </div>
         <button class="btn btn-green w-full" onclick="startDispense()">BEGIN DISPENSE</button>
       </div>
-      <button class="absolute top-4 left-4 bg-[#222] text-xs p-2 rounded" onclick="simulateAuthFail()">Sim Auth Fail</button>
+      <button class="absolute top-4 left-4 bg-[#222] text-xs p-2 rounded" onclick="simulateAuthFail()">Sim Auth
+        Fail</button>
     </div>
 
     <!-- SCREEN 7: DISPENSE (HERO) -->
@@ -242,17 +1147,28 @@
       <div class="dispense-layout">
         <div class="machine-visual">
           <h3 class="text-xl font-bold text-gray-400 mb-8 uppercase tracking-widest">Live Mechanism</h3>
-          <div class="machine-tank"><div class="machine-liquid" id="m-tank-liquid"><div class="machine-wave"></div></div></div>
-          <div class="machine-pipe"><div class="solenoid" id="m-solenoid">CLOSED</div></div>
+          <div class="machine-tank">
+            <div class="machine-liquid" id="m-tank-liquid">
+              <div class="machine-wave"></div>
+            </div>
+          </div>
+          <div class="machine-pipe">
+            <div class="solenoid" id="m-solenoid">CLOSED</div>
+          </div>
           <div class="machine-nozzle"></div>
           <div id="m-stream" class="stream"></div>
-          <div class="machine-bottle"><div class="bottle-liquid" id="m-bottle-liquid"><div class="machine-wave"></div></div></div>
+          <div class="machine-bottle">
+            <div class="bottle-liquid" id="m-bottle-liquid">
+              <div class="machine-wave"></div>
+            </div>
+          </div>
         </div>
         <div class="telemetry-panel">
           <div class="bg-[var(--panel)] p-8 rounded-[30px] flex items-center justify-center relative flex-1">
             <svg width="240" height="240" viewBox="0 0 240 240">
               <circle cx="120" cy="120" r="100" fill="none" stroke="#222" stroke-width="20" />
-              <circle id="disp-gauge" class="gauge-circle" cx="120" cy="120" r="100" fill="none" stroke="var(--green-bright)" stroke-width="20" stroke-linecap="round" transform="rotate(-90 120 120)" />
+              <circle id="disp-gauge" class="gauge-circle" cx="120" cy="120" r="100" fill="none"
+                stroke="var(--green-bright)" stroke-width="20" stroke-linecap="round" transform="rotate(-90 120 120)" />
             </svg>
             <div class="absolute text-center">
               <div class="text-6xl font-black font-mono text-[#3ecf7a]" id="disp-ml">0</div>
@@ -260,10 +1176,16 @@
             </div>
           </div>
           <div class="grid grid-cols-2 gap-4">
-            <div class="data-box flex-col items-start"><span class="text-sm text-gray-400 font-bold">FLOW RATE</span><span class="data-val" id="disp-flow">0.0 <span class="text-lg text-white">L/m</span></span></div>
-            <div class="data-box flex-col items-start"><span class="text-sm text-gray-400 font-bold">TEMP</span><span class="data-val" id="disp-temp">24.2 <span class="text-lg text-white">°C</span></span></div>
-            <div class="data-box flex-col items-start"><span class="text-sm text-gray-400 font-bold">TDS</span><span class="data-val" id="disp-tds">142 <span class="text-lg text-white">ppm</span></span></div>
-            <div class="data-box flex-col items-start"><span class="text-sm text-gray-400 font-bold">TIME EST</span><span class="data-val" id="disp-time">0:15 <span class="text-lg text-white">s</span></span></div>
+            <div class="data-box flex-col items-start"><span class="text-sm text-gray-400 font-bold">FLOW
+                RATE</span><span class="data-val" id="disp-flow">0.0 <span class="text-lg text-white">L/m</span></span>
+            </div>
+            <div class="data-box flex-col items-start"><span class="text-sm text-gray-400 font-bold">TEMP</span><span
+                class="data-val" id="disp-temp">24.2 <span class="text-lg text-white">°C</span></span></div>
+            <div class="data-box flex-col items-start"><span class="text-sm text-gray-400 font-bold">TDS</span><span
+                class="data-val" id="disp-tds">142 <span class="text-lg text-white">ppm</span></span></div>
+            <div class="data-box flex-col items-start"><span class="text-sm text-gray-400 font-bold">TIME
+                EST</span><span class="data-val" id="disp-time">0:15 <span class="text-lg text-white">s</span></span>
+            </div>
           </div>
           <div class="bg-[var(--panel)] p-4 rounded-[20px]">
             <span class="text-xs text-gray-400 font-bold block mb-2">FLOW RATE HISTORY</span>
@@ -279,25 +1201,31 @@
     <!-- SCREEN 8: PAYMENT -->
     <div id="screen-8" class="screen items-center justify-center">
       <div id="success-anim" class="w-full text-center">
-        <svg class="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52"><circle class="checkmark__circle" cx="26" cy="26" r="25" fill="none"/><path class="checkmark__check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/></svg>
+        <svg class="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
+          <circle class="checkmark__circle" cx="26" cy="26" r="25" fill="none" />
+          <path class="checkmark__check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8" />
+        </svg>
         <h1 class="text-5xl font-black mb-4">Dispense Complete!</h1>
         <p class="text-2xl text-[#3ecf7a] font-bold" id="pay-summary-text">500ml Water refilled successfully</p>
         <div class="flex gap-4 justify-center mt-8">
-          <div class="bg-[var(--panel)] p-4 rounded-xl border border-[#333]">Acc: <span class="text-[#3ecf7a] font-bold">99.6%</span></div>
-          <div class="bg-[var(--panel)] p-4 rounded-xl border border-[#333]">Time: <span class="text-[#3ecf7a] font-bold">14s</span></div>
-          <div class="bg-[var(--panel)] p-4 rounded-xl border border-[#333]">Avg Flow: <span class="text-[#3ecf7a] font-bold">1.7 L/m</span></div>
+          <div class="bg-[var(--panel)] p-4 rounded-xl border border-[#333]">Acc: <span
+              class="text-[#3ecf7a] font-bold">99.6%</span></div>
+          <div class="bg-[var(--panel)] p-4 rounded-xl border border-[#333]">Time: <span
+              class="text-[#3ecf7a] font-bold">14s</span></div>
+          <div class="bg-[var(--panel)] p-4 rounded-xl border border-[#333]">Avg Flow: <span
+              class="text-[#3ecf7a] font-bold">1.7 L/m</span></div>
         </div>
       </div>
       <div id="payment-box" class="payment-box hidden mt-8">
         <h2 class="text-4xl font-black mb-2">Payment Processing</h2>
         <p class="text-gray-400 mb-6">Please complete the payment on your mobile app.</p>
         <div class="text-7xl font-black text-[#3ecf7a] mb-8" id="pay-amt">₹0.00</div>
-        <div class="text-[var(--amber)] font-bold mb-8">Waiting for app confirmation... <span id="pay-timer">5:00</span></div>
-        <div class="flex justify-center items-center gap-4 mb-6 text-gray-400">
-           <div class="w-8 h-8 rounded-full border-t-2 border-[#3ecf7a] animate-spin"></div>
-           <span>Syncing with cloud...</span>
+        <div class="text-[var(--amber)] font-bold mb-8">Waiting for app confirmation... <span id="pay-timer">5:00</span>
         </div>
-        <button class="btn btn-green w-full" id="demo-override-btn" onclick="completePayment()">I have paid</button>
+        <div class="flex justify-center items-center gap-4 mb-6 text-gray-400">
+          <div class="w-8 h-8 rounded-full border-t-2 border-[#3ecf7a] animate-spin"></div>
+          <span>Syncing with cloud...</span>
+        </div>
       </div>
     </div>
 
@@ -315,8 +1243,13 @@
         <p class="flex justify-between"><span>Txn ID:</span> <span id="r-txn"></span></p>
         <p class="flex justify-between"><span>User:</span> <span id="r-user"></span></p>
         <p>----------------------------------</p>
-        <div class="flex justify-between mt-4 text-xl"><span id="r-prod"></span><span id="r-amt"></span></div>
-        <p class="flex justify-between text-sm text-gray-400 mt-2"><span>Unit Price:</span> <span id="r-unit"></span></p>
+        <div class="flex justify-between mt-4 text-xl"><span id="r-prod"></span><span id="r-subtotal"></span></div>
+        <div class="flex justify-between text-sm text-[var(--amber)] mt-1" id="r-points-row" style="display:none;">
+          <span>Points Redeemed:</span> <span id="r-points-redeem"></span></div>
+        <div class="flex justify-between text-xl font-bold text-[#3ecf7a] mt-2"><span>Total Paid:</span> <span
+            id="r-amt"></span></div>
+        <p class="flex justify-between text-sm text-gray-400 mt-2"><span>Unit Price:</span> <span id="r-unit"></span>
+        </p>
         <p>----------------------------------</p>
         <p class="flex justify-between mt-4"><span>Points Earned:</span> <span id="r-pts" class="text-white"></span></p>
         <p class="flex justify-between"><span>CO2 Saved:</span> <span id="r-co2" class="text-white"></span></p>
@@ -329,132 +1262,152 @@
         <button class="btn btn-outline flex-1" onclick="window.print()">Print</button>
         <button class="btn btn-outline flex-1" onclick="emailReceipt()">Email</button>
       </div>
-      <button class="btn btn-green max-w-[500px] mx-auto w-full mt-4 no-print" onclick="resetToIdle()">Done — New Session</button>
+      <button class="btn btn-green max-w-[500px] mx-auto w-full mt-4 no-print" onclick="resetToIdle()">Done — New
+        Session</button>
     </div>
   </div>
-  
+
   <div id="maintenance-modal">
     <div id="maint-pin" class="m-auto text-center w-full">
       <h2 class="text-4xl font-black mb-8">Enter PIN</h2>
       <div class="text-4xl tracking-[1em] mb-12 text-[#3ecf7a]" id="pin-display">_ _ _ _</div>
       <div class="pin-pad">
-        <div class="pin-btn" onclick="enterPin(1)">1</div><div class="pin-btn" onclick="enterPin(2)">2</div><div class="pin-btn" onclick="enterPin(3)">3</div>
-        <div class="pin-btn" onclick="enterPin(4)">4</div><div class="pin-btn" onclick="enterPin(5)">5</div><div class="pin-btn" onclick="enterPin(6)">6</div>
-        <div class="pin-btn" onclick="enterPin(7)">7</div><div class="pin-btn" onclick="enterPin(8)">8</div><div class="pin-btn" onclick="enterPin(9)">9</div>
-        <div class="pin-btn text-red-500" onclick="enterPin('C')">C</div><div class="pin-btn" onclick="enterPin(0)">0</div><div class="pin-btn text-green-500" onclick="checkPin()">OK</div>
+        <div class="pin-btn" onclick="enterPin(1)">1</div>
+        <div class="pin-btn" onclick="enterPin(2)">2</div>
+        <div class="pin-btn" onclick="enterPin(3)">3</div>
+        <div class="pin-btn" onclick="enterPin(4)">4</div>
+        <div class="pin-btn" onclick="enterPin(5)">5</div>
+        <div class="pin-btn" onclick="enterPin(6)">6</div>
+        <div class="pin-btn" onclick="enterPin(7)">7</div>
+        <div class="pin-btn" onclick="enterPin(8)">8</div>
+        <div class="pin-btn" onclick="enterPin(9)">9</div>
+        <div class="pin-btn text-red-500" onclick="enterPin('C')">C</div>
+        <div class="pin-btn" onclick="enterPin(0)">0</div>
+        <div class="pin-btn text-green-500" onclick="checkPin()">OK</div>
       </div>
     </div>
     <div id="maint-dash" class="hidden h-full flex flex-col">
-      <div class="flex justify-between mb-8"><h2 class="text-3xl font-black">Maintenance Dashboard</h2><button class="btn btn-outline h-12 text-sm px-8" onclick="document.getElementById('maintenance-modal').style.display='none'">Exit</button></div>
+      <div class="flex justify-between mb-8">
+        <h2 class="text-3xl font-black">Maintenance Dashboard</h2><button class="btn btn-outline h-12 text-sm px-8"
+          onclick="document.getElementById('maintenance-modal').style.display='none'">Exit</button>
+      </div>
       <div class="bg-[var(--panel)] p-8 rounded-3xl flex-1 overflow-y-auto">
         <h3 class="text-2xl font-bold mb-6 text-[#3ecf7a]">Tank Levels</h3>
         <div class="grid grid-cols-2 gap-8 mb-8">
-          <div><label class="block mb-2">Water (%)</label><input type="range" id="mt-water" min="0" max="100" onchange="updateMaintTanks()"></div>
-          <div><label class="block mb-2">Shampoo (%)</label><input type="range" id="mt-shampoo" min="0" max="100" onchange="updateMaintTanks()"></div>
-          <div><label class="block mb-2">Detergent (%)</label><input type="range" id="mt-detergent" min="0" max="100" onchange="updateMaintTanks()"></div>
-          <div><label class="block mb-2">Handwash (%)</label><input type="range" id="mt-handwash" min="0" max="100" onchange="updateMaintTanks()"></div>
-          <div><label class="block mb-2">Oil (%)</label><input type="range" id="mt-oil" min="0" max="100" onchange="updateMaintTanks()"></div>
+          <div><label class="block mb-2">Shampoo (%)</label><input type="range" id="mt-shampoo" min="0" max="100"
+              onchange="updateMaintTanks()"></div>
+          <div><label class="block mb-2">Detergent (%)</label><input type="range" id="mt-detergent" min="0" max="100"
+              onchange="updateMaintTanks()"></div>
+          <div><label class="block mb-2">Handwash (%)</label><input type="range" id="mt-handwash" min="0" max="100"
+              onchange="updateMaintTanks()"></div>
+          <div><label class="block mb-2">Oil (%)</label><input type="range" id="mt-oil" min="0" max="100"
+              onchange="updateMaintTanks()"></div>
         </div>
         <button class="btn btn-green h-12 text-sm w-48 mb-12" onclick="refillAllTanks()">Refill All to 100%</button>
-        <button class="btn btn-red h-12 text-sm w-48" onclick="localStorage.clear(); location.reload();">Hard Factory Reset</button>
+        <button class="btn btn-red h-12 text-sm w-48" onclick="localStorage.clear(); location.reload();">Hard Factory
+          Reset</button>
       </div>
     </div>
   </div>
 
-  <div id="bottom-bar"><div id="step-text">Step 1 of 5: Welcome</div><div style="color: #666;">Need help? Press and hold for 3 seconds</div></div>
+  <div id="bottom-bar">
+    <div id="step-text">Step 1 of 5: Welcome</div>
+    <div style="color: #666;">Need help? Press and hold for 3 seconds</div>
+  </div>
   <script>
-let currentStream = null;
-let scanLoopRunning = false;
-let scanAnimationId = null;
-let videoFeed = null;
-let lastTime = 0;
+    let currentStream = null;
+    let scanLoopRunning = false;
+    let scanAnimationId = null;
+    let videoFeed = null;
+    let lastTime = 0;
 
-let frameCount = 0;
-let fps = 0;
-let lastFpsUpdate = 0;
+    let frameCount = 0;
+    let fps = 0;
+    let lastFpsUpdate = 0;
 
-function safeAddListener(id, event, handler) {
-  const el = document.getElementById(id);
-  if (el) {
-    el.addEventListener(event, handler);
-  } else {
-    console.warn('Missing element with id:', id);
-  }
-}
+    function safeAddListener(id, event, handler) {
+      const el = document.getElementById(id);
+      if (el) {
+        el.addEventListener(event, handler);
+      } else {
+        console.warn('Missing element with id:', id);
+      }
+    }
 
     const CLOUD_URL = window.location.origin;
     window.db = "LocalCloud";
     window.fbRef = (db, path) => path;
     function getPending() { return JSON.parse(localStorage.getItem("rxPendingWrites") || "[]"); }
     function savePending(writes) { localStorage.setItem("rxPendingWrites", JSON.stringify(writes)); }
-    
-    window.safeSet = async function(path, data) {
+
+    window.safeSet = async function (path, data) {
       try {
-        if(!MACHINE.isOnline) throw new Error("Offline");
-        await fetch(CLOUD_URL + "/api/set", { method:"POST", body: JSON.stringify({path, data}) });
-      } catch(e) {
+        if (!MACHINE.isOnline) throw new Error("Offline");
+        await fetch(CLOUD_URL + "/api/set", { method: "POST", body: JSON.stringify({ path, data }) });
+      } catch (e) {
         const p = getPending(); p.push({ action: "set", path, data }); savePending(p);
       }
     }
-    window.safeUpdate = async function(path, data) {
+    window.safeUpdate = async function (path, data) {
       try {
-        if(!MACHINE.isOnline) throw new Error("Offline");
-        await fetch(CLOUD_URL + "/api/update", { method:"POST", body: JSON.stringify({path, data}) });
-      } catch(e) {
+        if (!MACHINE.isOnline) throw new Error("Offline");
+        await fetch(CLOUD_URL + "/api/update", { method: "POST", body: JSON.stringify({ path, data }) });
+      } catch (e) {
         const p = getPending(); p.push({ action: "update", path, data }); savePending(p);
       }
     }
-    
-    window.fbGet = async function(path) {
-       const res = await fetch(CLOUD_URL + "/api/get?path=" + encodeURIComponent(path));
-       const data = await res.json();
-       return { exists: () => data.value !== null, val: () => data.value };
+
+    window.fbGet = async function (path) {
+      const res = await fetch(CLOUD_URL + "/api/get?path=" + encodeURIComponent(path));
+      const data = await res.json();
+      return { exists: () => data.value !== null, val: () => data.value };
     }
     window.get = window.fbGet;
     window.ref = window.fbRef;
-    
+
     let GLOBAL_STATE = {};
     const listeners = [];
-    window.fbOnValue = function(path, callback) {
+    window.fbOnValue = function (path, callback) {
       listeners.push({ path, callback });
     }
     window.onValue = window.fbOnValue;
     window.fbSet = window.safeSet;
-    
+    window.fbUpdate = window.safeUpdate;
+
     function getByPath(d, p) {
-      const keys = p.split("/").filter(k=>k);
+      const keys = p.split("/").filter(k => k);
       let curr = d;
-      for(let k of keys) { if(curr && curr[k] !== undefined) curr = curr[k]; else return null; }
+      for (let k of keys) { if (curr && curr[k] !== undefined) curr = curr[k]; else return null; }
       return curr;
     }
-    
+
     setInterval(async () => {
       try {
         const res = await fetch(CLOUD_URL + "/api/sync");
-        if(!res.ok) throw new Error("Server error");
+        if (!res.ok) throw new Error("Server error");
         const data = await res.json();
-        
-        if(!MACHINE.isOnline) {
+
+        if (!MACHINE.isOnline) {
           MACHINE.isOnline = true;
           const pending = getPending();
-          if(pending.length > 0) {
-             for(let task of pending) {
-               try { await fetch(CLOUD_URL + "/api/" + task.action, { method:"POST", body: JSON.stringify({path:task.path, data:task.data}) }); } catch(e){}
-             }
-             savePending([]);
+          if (pending.length > 0) {
+            for (let task of pending) {
+              try { await fetch(CLOUD_URL + "/api/" + task.action, { method: "POST", body: JSON.stringify({ path: task.path, data: task.data }) }); } catch (e) { }
+            }
+            savePending([]);
           }
         }
-        
+
         GLOBAL_STATE = data;
         listeners.forEach(l => {
-           const val = getByPath(data, l.path);
-           if(val !== null) l.callback({ val: () => val, exists: () => val !== null });
+          const val = getByPath(data, l.path);
+          if (val !== null) l.callback({ val: () => val, exists: () => val !== null });
         });
-        
+
         document.getElementById("online-badge").innerText = "ONLINE";
         document.getElementById("online-badge").style.background = "var(--green-accent)";
         document.getElementById("offline-banner").style.display = "none";
-      } catch(e) {
+      } catch (e) {
         MACHINE.isOnline = false;
         document.getElementById("online-badge").innerText = "OFFLINE";
         document.getElementById("online-badge").style.background = "var(--amber)";
@@ -464,12 +1417,11 @@ function safeAddListener(id, event, handler) {
 
     const MACHINE = {
       screen: 1, product: null, quantity: null, pricePer100ml: 0, sessionId: null, dispensedMl: 0,
-      tankLevels: JSON.parse(localStorage.getItem('rxTanks')) || { water: 75, shampoo: 45, detergent: 22, handwash: 60, oil: 40 },
+      tankLevels: JSON.parse(localStorage.getItem('rxTanks')) || { shampoo: 45, detergent: 22, handwash: 60, oil: 40 },
       isOnline: true, isDispensing: false, authData: null
     };
-    
+
     const PRODUCTS = {
-      water: { name: "RO Water", icon: "💧", price: 0.20, color: "#0ea5e9" }, // 20rs per litre
       shampoo: { name: "Shampoo", icon: "🧴", price: 80.00, color: "#4a2b66" }, // 800rs per litre
       detergent: { name: "Liquid Detergent", icon: "🫧", price: 20.00, color: "#7d4411" }, // 200rs per litre
       handwash: { name: "Handwash", icon: "🤲", price: 30.00, color: "#175452" }, // 300rs per litre
@@ -478,55 +1430,55 @@ function safeAddListener(id, event, handler) {
 
     const actx = new (window.AudioContext || window.webkitAudioContext)();
     let humOsc = null;
-    function playTone(freq, type, duration, vol=0.1) {
-      if(actx.state === 'suspended') actx.resume();
+    function playTone(freq, type, duration, vol = 0.1) {
+      if (actx.state === 'suspended') actx.resume();
       const osc = actx.createOscillator(); const gain = actx.createGain();
       osc.type = type; osc.frequency.value = freq; osc.connect(gain); gain.connect(actx.destination);
       gain.gain.setValueAtTime(vol, actx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, actx.currentTime + duration);
       osc.start(); osc.stop(actx.currentTime + duration);
     }
     function playTap() { playTone(600, 'sine', 0.1, 0.05); }
-    function playSuccess() { playTone(500, 'sine', 0.1); setTimeout(()=>playTone(800, 'sine', 0.2), 100); }
+    function playSuccess() { playTone(500, 'sine', 0.1); setTimeout(() => playTone(800, 'sine', 0.2), 100); }
     function playError() { playTone(150, 'sawtooth', 0.3, 0.2); }
     function startHum() {
-      if(actx.state === 'suspended') actx.resume();
+      if (actx.state === 'suspended') actx.resume();
       humOsc = actx.createOscillator(); const gain = actx.createGain();
       humOsc.type = 'triangle'; humOsc.frequency.value = 60; humOsc.connect(gain); gain.connect(actx.destination);
       gain.gain.value = 0.05; humOsc.start();
     }
-    function stopHum() { if(humOsc) { humOsc.stop(); humOsc = null; } }
-    
-    document.addEventListener('click', (e) => { if(e.target.tagName === 'BUTTON' || e.target.closest('.btn')) playTap(); });
+    function stopHum() { if (humOsc) { humOsc.stop(); humOsc = null; } }
+
+    document.addEventListener('click', (e) => { if (e.target.tagName === 'BUTTON' || e.target.closest('.btn')) playTap(); });
 
     let idleTimer;
     function resetIdleTimer() {
       clearTimeout(idleTimer);
-      if(MACHINE.screen > 1 && MACHINE.screen < 7) {
+      if (MACHINE.screen > 1 && MACHINE.screen < 7) {
         idleTimer = setTimeout(() => { showToast("Session expired due to inactivity"); resetToIdle(); }, 120000);
       }
     }
     document.addEventListener('touchstart', resetIdleTimer); document.addEventListener('click', resetIdleTimer);
 
-    
+
     // ----------------------------------------------------
     // ROBUST START BUTTON PIPELINE (BASED ON CHECKLIST)
     // ----------------------------------------------------
     window.onerror = (msg, src, line, col, err) => {
       console.error(`JS Error at ${src}:${line} - ${msg}`);
       const t = document.getElementById('toast');
-      if(t) { t.innerText = `Error: ${msg}`; t.style.display = 'block'; setTimeout(()=>t.style.display='none', 5000); }
+      if (t) { t.innerText = `Error: ${msg}`; t.style.display = 'block'; setTimeout(() => t.style.display = 'none', 5000); }
     };
 
     async function handleStart(e) {
-      if(e) e.preventDefault(); // prevent ghost clicks
+      if (e) e.preventDefault(); // prevent ghost clicks
       const startBtn = document.getElementById('start-btn');
       if (startBtn) {
         startBtn.style.transform = 'scale(0.95)';
         setTimeout(() => startBtn.style.transform = 'scale(1)', 150);
       }
-      
+
       console.log('Start button clicked');
-      
+
       try {
         console.log('Starting kiosk flow...');
         // Transition to camera/QR scan screen
@@ -543,7 +1495,7 @@ function safeAddListener(id, event, handler) {
         console.error('Start button element not found in DOM');
         return;
       }
-      
+
       // Ensure button is not disabled
       startBtn.removeAttribute('disabled');
       startBtn.classList.remove('disabled', 'btn-disabled', 'inactive');
@@ -561,41 +1513,41 @@ function safeAddListener(id, event, handler) {
       document.getElementById(`screen-${num}`).classList.add('active');
       MACHINE.screen = num;
       document.getElementById('step-text').innerText = stepName ? `Step ${stepNum} of 5: ${stepName}` : "RefillX System";
-      
-      if(num == 4) initScreen4();
-      if(num == 5) startCamera();
-      if(num == 6) initScreen6();
-      if(num == 7) initScreen7();
-      if(num == 8) initScreen8();
-      if(num == 9) initScreen9();
+
+      if (num == 4) initScreen4();
+      if (num == 5) startCamera();
+      if (num == 6) initScreen6();
+      if (num == 7) initScreen7();
+      if (num == 8) initScreen8();
+      if (num == 9) initScreen9();
       resetIdleTimer();
     }
 
     function showToast(message, duration = 3000) {
-  const toast = document.getElementById('toast-message');
-  if (!toast) {
-    console.warn('Toast element missing:', message);
-    return;
-  }
-  toast.innerText = message;
-  toast.style.display = 'block';
-  toast.style.opacity = '1';
-  setTimeout(() => {
-    toast.style.opacity = '0';
-    setTimeout(() => { toast.style.display = 'none'; }, 300);
-  }, duration);
-}
+      const toast = document.getElementById('toast-message');
+      if (!toast) {
+        console.warn('Toast element missing:', message);
+        return;
+      }
+      toast.innerText = message;
+      toast.style.display = 'block';
+      toast.style.opacity = '1';
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => { toast.style.display = 'none'; }, 300);
+      }, duration);
+    }
 
     function resetToIdle() {
       MACHINE.product = null; MACHINE.quantity = null; MACHINE.dispensedMl = 0; MACHINE.authData = null;
       stopHum(); stopCam();
-      if(window.dispenseInterval) clearInterval(window.dispenseInterval);
+      if (window.dispenseInterval) clearInterval(window.dispenseInterval);
       showScreen(1, "Welcome", 0);
     }
 
     let statIdx = 1;
     setInterval(() => {
-      if(MACHINE.screen !== 1) return;
+      if (MACHINE.screen !== 1) return;
       document.querySelectorAll('.stat-card').forEach(c => c.classList.remove('active'));
       statIdx = statIdx >= 3 ? 1 : statIdx + 1;
       document.getElementById(`stat-${statIdx}`).classList.add('active');
@@ -606,14 +1558,14 @@ function safeAddListener(id, event, handler) {
     let gpsInterval;
     let fallbackPollInterval;
     let consecutiveClose = 0;
-    
+
     function haversine(lat1, lng1, lat2, lng2) {
-      if(!lat1 || !lng1 || !lat2 || !lng2) return 999;
+      if (!lat1 || !lng1 || !lat2 || !lng2) return 999;
       const R = 6371; // km
       const dLat = (lat2 - lat1) * Math.PI / 180;
       const dLng = (lng2 - lng1) * Math.PI / 180;
-      const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180) * Math.sin(dLng/2) * Math.sin(dLng/2);
-      return Math.max(0, R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)) * 1000); // metres
+      const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+      return Math.max(0, R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)) * 1000); // metres
     }
 
     function initScreen4() {
@@ -624,7 +1576,7 @@ function safeAddListener(id, event, handler) {
       document.getElementById('btn-bottle-next').disabled = true;
       document.getElementById('btn-bottle-next').classList.add('opacity-50');
       document.getElementById('s4-title').innerText = "Detecting your bottle";
-      
+
       // Reset UI elements
       document.getElementById('dist-text').innerText = '--';
       document.getElementById('dist-circle-fill').style.strokeDashoffset = 879;
@@ -633,10 +1585,10 @@ function safeAddListener(id, event, handler) {
       document.getElementById('dist-status').innerText = 'Waiting for phone location...';
       document.getElementById('dist-status').className = 'text-xl font-bold text-gray-400 mt-4 h-8';
       document.querySelectorAll('.radar-ring').forEach(r => r.style.display = 'block');
-      
+
       // Get Kiosk Location
       document.getElementById('kiosk-gps-status').innerText = "📍 Acquiring Kiosk GPS...";
-      if(navigator.geolocation) {
+      if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
           (pos) => {
             MACHINE.kioskLat = pos.coords.latitude; MACHINE.kioskLng = pos.coords.longitude;
@@ -650,23 +1602,23 @@ function safeAddListener(id, event, handler) {
           { enableHighAccuracy: true, timeout: 10000 }
         );
       }
-      
+
       // Sync loop
       gpsInterval = setInterval(syncPhoneLocation, 2000);
     }
-    
+
     function syncPhoneLocation() {
-      if(MACHINE.screen !== 4) return clearInterval(gpsInterval);
-      if(MACHINE.proximityCode) return; // In fallback mode
-      
+      if (MACHINE.screen !== 4) return clearInterval(gpsInterval);
+      if (MACHINE.proximityCode) return; // In fallback mode
+
       // Force Demo Mode?
       const forceDemo = document.getElementById('chk-force-gps').checked;
-      if(forceDemo) {
+      if (forceDemo) {
         MACHINE.kioskLat = 13.0827; MACHINE.kioskLng = 80.2707;
         document.getElementById('kiosk-gps-status').innerText = "📍 Station location forced (Demo)";
         document.getElementById('dbg-k-loc').innerText = "13.0827, 80.2707";
       }
-      
+
       // Read phone location from Firebase (if sessionId exists? No, we don't have sessionId yet)
       // Wait, on Screen 4, we don't have the QR code yet! The Mobile App hasn't generated the QR yet!
       // Actually, the user's flow says: "Mobile generates QR -> User scans QR -> Kiosk dispenses".
@@ -674,53 +1626,53 @@ function safeAddListener(id, event, handler) {
       // Ah! The user requested: "The mobile phone acts as the bottle... On the Waiting Screen (after QR is generated and shown): immediately start watchPosition... write to localStorage... Kiosk reads phone coordinates".
       // BUT they are on different laptops! The Kiosk doesn't know the Mobile App's session ID until they SCAN the QR!
       // This is a flaw. Since we cannot share localStorage, and we don't have the session ID, we can use a global 'demo_location' node in Firebase!
-      
-      if(window.db && window.fbRef && window.fbOnValue && !window._fbListeningDemo) {
+
+      if (window.db && window.fbRef && window.fbOnValue && !window._fbListeningDemo) {
         window._fbListeningDemo = true;
         window.fbOnValue(window.fbRef(window.db, 'global_demo/phoneLocation'), (snap) => {
           window.latestPhoneLoc = snap.val();
         });
         window.fbOnValue(window.fbRef(window.db, 'global_demo/proximityConfirmed'), (snap) => {
-          if(snap.val() === true && MACHINE.screen === 4 && MACHINE.proximityCode) {
+          if (snap.val() === true && MACHINE.screen === 4 && MACHINE.proximityCode) {
             triggerBottleConfirmed();
-            if(window.fbSet) window.fbSet(window.fbRef(window.db, 'global_demo/proximityConfirmed'), false);
+            if (window.fbSet) window.fbSet(window.fbRef(window.db, 'global_demo/proximityConfirmed'), false);
           }
         });
       }
-      
+
       const phoneLoc = window.latestPhoneLoc;
-      if(!phoneLoc || Date.now() - phoneLoc.ts > 15000) return; // Stale or empty
-      
+      if (!phoneLoc || Date.now() - phoneLoc.ts > 15000) return; // Stale or empty
+
       let pLat = phoneLoc.lat; let pLng = phoneLoc.lng; let pAcc = phoneLoc.accuracy;
-      if(forceDemo) { pLat = 13.08271; pLng = 80.27072; pAcc = 5; } // Fake close coordinates
-      
+      if (forceDemo) { pLat = 13.08271; pLng = 80.27072; pAcc = 5; } // Fake close coordinates
+
       document.getElementById('dbg-p-loc').innerText = `${pLat.toFixed(4)}, ${pLng.toFixed(4)}`;
       document.getElementById('dbg-time').innerText = new Date(phoneLoc.ts).toLocaleTimeString();
       document.getElementById('gps-acc').innerText = `±${Math.round(pAcc)}m`;
-      
+
       // Fallback check
-      if(pAcc > 15 && !forceDemo) return startFallbackMode();
-      
+      if (pAcc > 15 && !forceDemo) return startFallbackMode();
+
       // Calc distance
       let dist = haversine(MACHINE.kioskLat, MACHINE.kioskLng, pLat, pLng);
-      if(forceDemo) dist = Math.random() * 2; // Simulate moving around 0-2m
-      
+      if (forceDemo) dist = Math.random() * 2; // Simulate moving around 0-2m
+
       document.getElementById('dbg-dist').innerText = dist.toFixed(2) + "m";
       document.getElementById('dist-text').innerText = dist.toFixed(1);
       document.getElementById('hc-dist').innerText = Math.round(dist * 100) + " cm";
-      
+
       // Update UI
       // Circle: 879 is empty, 0 is full (5m scale)
       let pct = Math.max(0, Math.min(100, ((5 - dist) / 5) * 100));
       document.getElementById('dist-circle-fill').style.strokeDashoffset = 879 - (879 * pct / 100);
       document.getElementById('prox-fill').style.width = pct + "%";
       document.getElementById('prox-dot').style.left = pct + "%";
-      
+
       // Floor plan
       document.getElementById('fp-phone-icon').style.transform = `translateX(${Math.min(150, dist * 30)}px)`;
-      
+
       const statusEl = document.getElementById('dist-status');
-      if(dist > 3) {
+      if (dist > 3) {
         statusEl.innerText = "🔴 Too far — bring your bottle closer";
         statusEl.style.color = "#ff4b4b";
         consecutiveClose = 0;
@@ -734,26 +1686,26 @@ function safeAddListener(id, event, handler) {
         consecutiveClose++;
       }
       document.getElementById('dbg-cons').innerText = consecutiveClose + "/3";
-      
-      if(consecutiveClose >= 3) triggerBottleConfirmed();
+
+      if (consecutiveClose >= 3) triggerBottleConfirmed();
     }
-    
+
     function startFallbackMode() {
-      if(MACHINE.proximityCode) return;
+      if (MACHINE.proximityCode) return;
       MACHINE.proximityCode = Math.floor(1000 + Math.random() * 9000).toString();
-      
+
       document.getElementById('gps-ui-container').style.display = 'none';
       document.getElementById('fallback-ui-container').style.display = 'flex';
       document.getElementById('s4-title').innerText = "Confirm Proximity";
-      
+
       const boxes = document.querySelectorAll('.otp-box');
-      for(let i=0; i<4; i++) boxes[i].innerText = MACHINE.proximityCode[i];
-      
-      if(window.db && window.fbRef && window.fbSet) {
+      for (let i = 0; i < 4; i++) boxes[i].innerText = MACHINE.proximityCode[i];
+
+      if (window.db && window.fbRef && window.fbSet) {
         window.fbSet(window.fbRef(window.db, 'global_demo/proximityCode'), MACHINE.proximityCode);
       }
     }
-    
+
     function triggerBottleConfirmed() {
       clearInterval(gpsInterval);
       playSuccess();
@@ -762,26 +1714,26 @@ function safeAddListener(id, event, handler) {
       document.querySelectorAll('.radar-ring').forEach(r => r.style.display = 'none');
       document.getElementById('btn-bottle-next').disabled = false;
       document.getElementById('btn-bottle-next').classList.remove('opacity-50');
-      
+
       // Auto advance after 1.5s
       setTimeout(() => {
-        if(MACHINE.screen === 4) showScreen(5, 'Scan QR', 2);
+        if (MACHINE.screen === 4) showScreen(5, 'Scan QR', 2);
       }, 1500);
     }
-    
+
     function handleDemoOverride() {
       console.log("Session Log: Bottle detected via ManualOverride");
       triggerBottleConfirmed();
     }
-    
+
     // Hold 3 seconds for Manual Override
     let overrideTimer;
     let overrideStart;
     const overrideBtn = document.getElementById('btn-demo-override');
     const overrideProg = document.getElementById('override-progress');
-    
+
     function startOverride(e) {
-      if(e.type === 'touchstart') e.preventDefault(); // prevent mouse emulation
+      if (e.type === 'touchstart') e.preventDefault(); // prevent mouse emulation
       overrideStart = Date.now();
       overrideProg.style.transition = 'width 3s linear';
       overrideProg.style.width = '100%';
@@ -794,7 +1746,7 @@ function safeAddListener(id, event, handler) {
       overrideProg.style.transition = 'width 0.2s ease-out';
       overrideProg.style.width = '0%';
     }
-    
+
     if (overrideBtn) {
       overrideBtn.addEventListener('mousedown', startOverride);
       overrideBtn.addEventListener('touchstart', startOverride);
@@ -804,28 +1756,28 @@ function safeAddListener(id, event, handler) {
     }
 
     // --- Screen 5: QR Scan ---
-    
+
     const videoOverlay = document.getElementById('overlay');
     const ctxOverlay = videoOverlay.getContext('2d');
-    
+
     // ----------------------------------------------------
     // ROBUST CAMERA PIPELINE (BASED ON CHECKLIST)
     const hiddenCanvas = document.createElement('canvas');
     const ctxHidden = hiddenCanvas.getContext('2d', { willReadFrequently: true });
-    
-        // ----------------------------------------------------
-    
-    
-     
-    
-    
-    
+
+    // ----------------------------------------------------
+
+
+
+
+
+
 
     if (location.protocol !== 'https:' && location.hostname !== 'localhost' && !location.hostname.endsWith('loca.lt')) {
-        setTimeout(() => showToast('Camera requires HTTPS. Please use the secure URL.'), 1000);
+      setTimeout(() => showToast('Camera requires HTTPS. Please use the secure URL.'), 1000);
     }
 
-    
+
     async function startCamera() {
       try {
         if (currentStream) {
@@ -869,7 +1821,7 @@ function safeAddListener(id, event, handler) {
             console.log('✅ Camera live:', video.videoWidth + 'x' + video.videoHeight);
             const hiddenCanvas = document.createElement('canvas');
             const ctxHidden = hiddenCanvas.getContext('2d', { willReadFrequently: true });
-            
+
             const canvas = document.getElementById('overlay');
             if (canvas) {
               canvas.width = video.videoWidth || 1280;
@@ -893,169 +1845,231 @@ function safeAddListener(id, event, handler) {
         currentStream.getTracks().forEach(track => track.stop());
         currentStream = null;
       }
-      if(videoFeed) videoFeed.srcObject = null;
+      if (videoFeed) videoFeed.srcObject = null;
       scanLoopRunning = false;
-      await startCamera(); 
+      await startCamera();
     }
 
-    function stopCam() { 
-      scanLoopRunning = false; 
+    function stopCam() {
+      scanLoopRunning = false;
       if (currentStream) {
-          currentStream.getTracks().forEach(t => t.stop());
-          currentStream = null;
+        currentStream.getTracks().forEach(t => t.stop());
+        currentStream = null;
       }
-      if(videoFeed) videoFeed.srcObject = null;
+      if (videoFeed) videoFeed.srcObject = null;
     }
 
+    let scanTimeoutId = null;
     function startQRScanLoop() {
       if (scanLoopRunning) return;
       scanLoopRunning = true;
+      // Start 15-second timeout
+      if (scanTimeoutId) clearTimeout(scanTimeoutId);
+      scanTimeoutId = setTimeout(() => {
+        if (scanLoopRunning && MACHINE.screen === 5) {
+          scanLoopRunning = false;
+          document.getElementById('qr-error').innerText = "Scan timed out — try again or adjust position";
+          document.getElementById('qr-error').style.color = "var(--amber)";
+          document.querySelectorAll('.scan-bracket').forEach(b => b.style.borderColor = 'var(--amber)');
+          document.getElementById('qr-laser').style.display = 'none';
+        }
+      }, 15000);
       requestAnimationFrame(scanFrame);
     }
 
     function updateFPS() {
-  frameCount++;
-  const now = performance.now();
-  if (now - lastFpsUpdate >= 1000) {
-    fps = Math.round(frameCount * 1000 / (now - lastFpsUpdate));
-    frameCount = 0;
-    lastFpsUpdate = now;
-    const fpsEl = document.getElementById('cam-fps') 
-                  || document.querySelector('[id*="fps"]')
-                  || document.querySelector('[class*="fps"]');
-    if (fpsEl) fpsEl.textContent = fps + ' FPS';
-  }
-}
-
-function scanFrame(timestamp) {
-  if (!scanLoopRunning) return;
-  if (!videoFeed) {
-    scanAnimationId = requestAnimationFrame(scanFrame);
-    return;
-  }
-
-  if (timestamp - lastTime < 66) {
-    scanAnimationId = requestAnimationFrame(scanFrame);
-    return;
-  }
-  lastTime = timestamp;
-
-  if (videoFeed.readyState === videoFeed.HAVE_ENOUGH_DATA) {
-    const canvas = document.getElementById('overlay');
-    if (!canvas) {
-      scanAnimationId = requestAnimationFrame(scanFrame);
-      return;
+      frameCount++;
+      const now = performance.now();
+      if (now - lastFpsUpdate >= 1000) {
+        fps = Math.round(frameCount * 1000 / (now - lastFpsUpdate));
+        frameCount = 0;
+        lastFpsUpdate = now;
+        const fpsEl = document.getElementById('cam-fps')
+          || document.querySelector('[id*="fps"]')
+          || document.querySelector('[class*="fps"]');
+        if (fpsEl) fpsEl.textContent = fps + ' FPS';
+      }
     }
 
-    if (canvas.width !== videoFeed.videoWidth) {
-      canvas.width = videoFeed.videoWidth;
-      canvas.height = videoFeed.videoHeight;
-    }
+    // Reusable offscreen canvas for scan region cropping
+    let cropCanvas = null;
+    let cropCtx = null;
 
-    const ctx = canvas.getContext('2d');
-    
-    const hiddenCanvas = document.createElement('canvas');
-    hiddenCanvas.width = canvas.width;
-    hiddenCanvas.height = canvas.height;
-    const ctxHidden = hiddenCanvas.getContext('2d', { willReadFrequently: true });
-    
-    ctxHidden.drawImage(videoFeed, 0, 0, canvas.width, canvas.height);
-
-    const imageData = ctxHidden.getImageData(
-      0, 0, canvas.width, canvas.height
-    );
-
-    if (typeof jsQR !== 'undefined') {
-      const code = jsQR(
-        imageData.data,
-        imageData.width,
-        imageData.height,
-        { inversionAttempts: 'attemptBoth' }
-      );
-      if (code && code.data) {
-        console.log('✅ QR detected:', code.data);
-        scanLoopRunning = false;
-        
-        ctx.clearRect(0,0, canvas.width, canvas.height);
-        ctx.lineWidth = 4; ctx.strokeStyle = "#00FF00";
-        ctx.beginPath();
-        ctx.moveTo(code.location.topLeftCorner.x, code.location.topLeftCorner.y);
-        ctx.lineTo(code.location.topRightCorner.x, code.location.topRightCorner.y);
-        ctx.lineTo(code.location.bottomRightCorner.x, code.location.bottomRightCorner.y);
-        ctx.lineTo(code.location.bottomLeftCorner.x, code.location.bottomLeftCorner.y);
-        ctx.closePath(); ctx.stroke();
-        document.querySelectorAll('.scan-bracket').forEach(b => b.style.borderColor = '#00FF00');
-        playSuccess();
-        processQR(code.data);
+    function scanFrame(timestamp) {
+      if (!scanLoopRunning) return;
+      if (!videoFeed) {
+        scanAnimationId = requestAnimationFrame(scanFrame);
         return;
       }
-    } else {
-      console.error('jsQR library not loaded');
+
+      // Throttle to ~30 FPS (33ms) for faster scanning
+      if (timestamp - lastTime < 33) {
+        scanAnimationId = requestAnimationFrame(scanFrame);
+        return;
+      }
+      lastTime = timestamp;
+
+      if (videoFeed.readyState === videoFeed.HAVE_ENOUGH_DATA) {
+        const canvas = document.getElementById('overlay');
+        if (!canvas) {
+          scanAnimationId = requestAnimationFrame(scanFrame);
+          return;
+        }
+
+        if (canvas.width !== videoFeed.videoWidth) {
+          canvas.width = videoFeed.videoWidth;
+          canvas.height = videoFeed.videoHeight;
+        }
+
+        const ctx = canvas.getContext('2d');
+        const vw = videoFeed.videoWidth;
+        const vh = videoFeed.videoHeight;
+
+        // Crop to center 60% of the frame for faster/more accurate scanning
+        const cropSize = Math.min(vw, vh) * 0.6;
+        const cx = Math.floor((vw - cropSize) / 2);
+        const cy = Math.floor((vh - cropSize) / 2);
+        const cw = Math.floor(cropSize);
+        const ch = Math.floor(cropSize);
+
+        // Reuse offscreen canvas instead of creating new one every frame
+        if (!cropCanvas || cropCanvas.width !== cw || cropCanvas.height !== ch) {
+          cropCanvas = document.createElement('canvas');
+          cropCanvas.width = cw;
+          cropCanvas.height = ch;
+          cropCtx = cropCanvas.getContext('2d', { willReadFrequently: true });
+        }
+
+        cropCtx.drawImage(videoFeed, cx, cy, cw, ch, 0, 0, cw, ch);
+        const imageData = cropCtx.getImageData(0, 0, cw, ch);
+
+        if (typeof jsQR !== 'undefined') {
+          const code = jsQR(
+            imageData.data,
+            imageData.width,
+            imageData.height,
+            { inversionAttempts: 'dontInvert' }
+          );
+          if (code && code.data) {
+            console.log('✅ QR detected:', code.data);
+            scanLoopRunning = false;
+            if (scanTimeoutId) { clearTimeout(scanTimeoutId); scanTimeoutId = null; }
+
+            // Map cropped coordinates back to full canvas for overlay drawing
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.lineWidth = 4; ctx.strokeStyle = "#00FF00";
+            ctx.beginPath();
+            ctx.moveTo(code.location.topLeftCorner.x + cx, code.location.topLeftCorner.y + cy);
+            ctx.lineTo(code.location.topRightCorner.x + cx, code.location.topRightCorner.y + cy);
+            ctx.lineTo(code.location.bottomRightCorner.x + cx, code.location.bottomRightCorner.y + cy);
+            ctx.lineTo(code.location.bottomLeftCorner.x + cx, code.location.bottomLeftCorner.y + cy);
+            ctx.closePath(); ctx.stroke();
+            document.querySelectorAll('.scan-bracket').forEach(b => b.style.borderColor = '#00FF00');
+
+            // Visual feedback: show "QR Detected ✓" before processing
+            document.getElementById('qr-error').innerText = "QR Detected ✓";
+            document.getElementById('qr-error').style.color = "var(--green-bright)";
+            document.getElementById('qr-laser').style.display = 'none';
+            playSuccess();
+            processQR(code.data);
+            return;
+          }
+        } else {
+          console.error('jsQR library not loaded');
+        }
+
+        updateFPS();
+      }
+
+      scanAnimationId = requestAnimationFrame(scanFrame);
     }
 
-    updateFPS();
-  }
-
-  scanAnimationId = requestAnimationFrame(scanFrame);
-}
-
-    function processQR(dataStr) {
+    async function processQR(dataStr) {
       try {
-        if(!MACHINE.isOnline) throw new Error("Offline mode. Use local cache.");
-        const payload = JSON.parse(dataStr);
+        if (!MACHINE.isOnline) throw new Error("Offline mode. Use local cache.");
+
+        let payload;
+
+        // Try JSON first (backward compatibility with old QR codes)
+        try {
+          payload = JSON.parse(dataStr);
+        } catch (jsonErr) {
+          // Not JSON — treat as a plain session ID and fetch order from server
+          if (dataStr.startsWith('RFX-') && window.fbGet) {
+            const snap = await window.fbGet(`sessions/${dataStr}/order`);
+            if (snap.exists()) {
+              payload = snap.val();
+            } else {
+              throw new Error("Order not found. Please regenerate QR.");
+            }
+          } else {
+            throw new Error("Invalid QR code format");
+          }
+        }
+
         if (payload.exp && payload.exp < Date.now()) throw new Error("QR expired — please regenerate in app");
         if (!PRODUCTS[payload.prod]) throw new Error("Invalid product requested");
-        
+
         // Low tank logic integration
         const reqQty = parseInt(payload.qty);
         const tankPct = MACHINE.tankLevels[payload.prod];
         const tankMaxMl = 5000; // Assume 5L tank
         const availMl = (tankPct / 100) * tankMaxMl;
-        
+
         MACHINE.product = payload.prod;
         MACHINE.pricePer100ml = PRODUCTS[payload.prod].price;
-        MACHINE.amount = payload.amt || ((MACHINE.quantity/100) * MACHINE.pricePer100ml);
         MACHINE.sessionId = payload.sid;
-        MACHINE.authData = payload; // includes name, email
+        MACHINE.authData = payload; // includes name, email from server-side order
 
-        if(reqQty > availMl) {
-          if(availMl < 50) throw new Error("Tank is completely empty.");
+        if (reqQty > availMl) {
+          if (availMl < 50) throw new Error("Tank is completely empty.");
           MACHINE.quantity = availMl; // Auto reduce
+          // Recalculate amount proportionally for reduced quantity
+          MACHINE.totalAmount = parseFloat(((availMl / reqQty) * payload.amt).toFixed(2));
           showToast(`Only ${availMl.toFixed(0)}ml left in machine. Filling that much.`);
         } else {
           MACHINE.quantity = reqQty;
+          // Use the pre-computed amount from mobile as single source of truth
+          MACHINE.totalAmount = parseFloat(payload.amt) || parseFloat(((reqQty / 100) * MACHINE.pricePer100ml).toFixed(2));
         }
 
-        playSuccess();
         document.getElementById('qr-error').innerText = "QR Verified ✓";
         document.getElementById('qr-error').style.color = "var(--green-bright)";
         document.querySelectorAll('.scan-bracket').forEach(b => b.classList.add('pulse-glow'));
         setTimeout(() => { stopCam(); showScreen(6, 'Authentication', 3); }, 1000);
-      } catch(e) {
+      } catch (e) {
         playError(); document.getElementById('qr-error').innerText = e.message || "Invalid QR Code format"; document.getElementById('qr-error').style.color = "var(--red)"; document.getElementById('video-box').classList.add('shake');
-        setTimeout(() => document.getElementById('video-box').classList.remove('shake'), 400); setTimeout(() => requestAnimationFrame(scanLoop), 1500);
+        setTimeout(() => document.getElementById('video-box').classList.remove('shake'), 400);
+        // Re-enable scanning for retry
+        setTimeout(() => { scanLoopRunning = false; startQRScanLoop(); }, 1500);
       }
     }
-    function demoQR() { processQR(JSON.stringify({ sid: "RFX-"+Date.now().toString(36).toUpperCase(), name: "Divyansh Singh", email: "divyansh@example.com", prod: "water", qty: 2000, amt: 40.00, exp: Date.now()+100000 })); }
+    function demoQR() {
+      // Store demo order server-side first, then process
+      const sid = "RFX-" + Date.now().toString(36).toUpperCase();
+      const order = { sid, uid: "demo_user", name: "Demo User", email: "demo@refillx.com", prod: "shampoo", qty: 500, amt: 400.00, exp: Date.now() + 100000, unitPrice: 80.00, productName: "Shampoo" };
+      window.safeSet(`sessions/${sid}/order`, order);
+      setTimeout(() => processQR(sid), 500);
+    }
 
     // --- Screen 6: Auth ---
     function initScreen6() {
       document.getElementById('auth-success').classList.add('hidden');
-      for(let i=1; i<=5; i++) document.getElementById(`chk-${i}`).className = 'checklist-item';
-      
+      for (let i = 1; i <= 5; i++) document.getElementById(`chk-${i}`).className = 'checklist-item';
+
       const delays = [600, 800, 700, 600, 500]; let cumulative = 0;
-      for(let i=1; i<=5; i++) {
-        cumulative += delays[i-1];
+      for (let i = 1; i <= 5; i++) {
+        cumulative += delays[i - 1];
         setTimeout(() => {
           document.getElementById(`chk-${i}`).className = 'checklist-item done'; playTap();
-          if(i===5) {
+          if (i === 5) {
             setTimeout(() => {
               document.getElementById('auth-success').classList.remove('hidden');
               document.getElementById('auth-name').innerText = MACHINE.authData.name;
               document.getElementById('auth-email').innerText = MACHINE.authData.email;
-              document.getElementById('auth-initials').innerText = MACHINE.authData.name.substring(0,2).toUpperCase();
+              document.getElementById('auth-initials').innerText = MACHINE.authData.name.substring(0, 2).toUpperCase();
               document.getElementById('auth-order-desc').innerText = `${MACHINE.quantity.toFixed(0)}ml ${PRODUCTS[MACHINE.product].name}`;
-              document.getElementById('auth-order-price').innerText = `₹${((MACHINE.quantity/100)*MACHINE.pricePer100ml).toFixed(2)}`;
+              document.getElementById('auth-order-price').innerText = `₹${MACHINE.totalAmount.toFixed(2)}`;
               playSuccess();
             }, 500);
           }
@@ -1072,63 +2086,63 @@ function scanFrame(timestamp) {
       document.getElementById('m-solenoid').innerText = "OPEN"; document.getElementById('m-solenoid').className = "solenoid open";
       document.getElementById('m-stream').style.height = "250px";
       document.getElementById('disp-target').innerText = `/ ${MACHINE.quantity.toFixed(0)} ml`;
-      
+
       const pColor = PRODUCTS[MACHINE.product].color;
       document.getElementById('m-tank-liquid').style.background = pColor; document.getElementById('m-bottle-liquid').style.background = pColor; document.getElementById('m-stream').style.background = pColor;
       document.getElementById('m-tank-liquid').style.height = MACHINE.tankLevels[MACHINE.product] + "%"; document.getElementById('m-bottle-liquid').style.height = "0%";
       startHum();
-      
+
       const drops = [];
-      for(let i=0; i<5; i++) { const d = document.createElement('div'); d.className='droplet'; d.style.background=pColor; d.style.animation = `dropFall 0.4s infinite linear ${i*0.1}s`; document.querySelector('.machine-visual').appendChild(d); drops.push(d); }
-      
+      for (let i = 0; i < 5; i++) { const d = document.createElement('div'); d.className = 'droplet'; d.style.background = pColor; d.style.animation = `dropFall 0.4s infinite linear ${i * 0.1}s`; document.querySelector('.machine-visual').appendChild(d); drops.push(d); }
+
       window.dispenseInterval = setInterval(() => {
-        let flow = 0.6 + (Math.random()*0.1 - 0.05); // Reduced flow to ~0.6 L/m for realistic speed
+        let flow = 0.6 + (Math.random() * 0.1 - 0.05); // Reduced flow to ~0.6 L/m for realistic speed
         let mlPerTick = (flow * 1000) / 300; // ~2ml per 200ms tick = ~10ml/sec
         MACHINE.dispensedMl += mlPerTick;
         if (MACHINE.dispensedMl >= MACHINE.quantity) { MACHINE.dispensedMl = MACHINE.quantity; finishDispense(drops); }
-        
+
         document.getElementById('disp-ml').innerText = Math.floor(MACHINE.dispensedMl);
         let pct = MACHINE.dispensedMl / MACHINE.quantity;
         document.getElementById('disp-gauge').style.strokeDashoffset = 628 - (628 * pct);
         document.getElementById('m-bottle-liquid').style.height = (pct * 90) + "%";
         if (window.db && window.fbRef && window.fbSet && MACHINE.sessionId) {
           let currentPct = Math.floor(pct * 100);
-          if (window.lastFbPct !== currentPct && currentPct % 5 === 0) { // Only update every 5% to prevent lag
+          if (window.lastFbPct !== currentPct && currentPct % 5 === 0) {
             window.lastFbPct = currentPct;
-            window.fbSet(window.fbRef(window.db, 'sessions/' + MACHINE.sessionId), { status: 'dispensing', progress: currentPct, ts: Date.now() });
+            window.fbUpdate(window.fbRef(window.db, 'sessions/' + MACHINE.sessionId), { status: 'dispensing', progress: currentPct, ts: Date.now() });
           }
         }
-        
+
         MACHINE.tankLevels[MACHINE.product] -= (mlPerTick / 5000) * 100;
         document.getElementById('m-tank-liquid').style.height = MACHINE.tankLevels[MACHINE.product] + "%";
-        
+
         document.getElementById('disp-flow').innerHTML = `${flow.toFixed(1)} <span class="text-lg text-white">L/m</span>`;
-        document.getElementById('disp-temp').innerHTML = `${(24.2 + Math.random()*0.4).toFixed(1)} <span class="text-lg text-white">°C</span>`;
-        document.getElementById('disp-tds').innerHTML = `${Math.floor(142 + Math.random()*5)} <span class="text-lg text-white">ppm</span>`;
-        
-        let timeLeft = ((MACHINE.quantity - MACHINE.dispensedMl) / (flow*1000/60)).toFixed(0);
-        document.getElementById('disp-time').innerHTML = `0:${timeLeft.padStart(2,'0')} <span class="text-lg text-white">s</span>`;
-        
+        document.getElementById('disp-temp').innerHTML = `${(24.2 + Math.random() * 0.4).toFixed(1)} <span class="text-lg text-white">°C</span>`;
+        document.getElementById('disp-tds').innerHTML = `${Math.floor(142 + Math.random() * 5)} <span class="text-lg text-white">ppm</span>`;
+
+        let timeLeft = ((MACHINE.quantity - MACHINE.dispensedMl) / (flow * 1000 / 60)).toFixed(0);
+        document.getElementById('disp-time').innerHTML = `0:${timeLeft.padStart(2, '0')} <span class="text-lg text-white">s</span>`;
+
         sparkData.shift(); sparkData.push(flow);
-        let pts = sparkData.map((v, i) => `${i*5},${60 - (v*20)}`).join(' ');
+        let pts = sparkData.map((v, i) => `${i * 5},${60 - (v * 20)}`).join(' ');
         document.getElementById('disp-spark').setAttribute('points', pts);
       }, 200);
     }
-    
-    function emergencyStop() { if(!MACHINE.isDispensing) return; showToast("EMERGENCY STOP. Valve closed."); playError(); finishDispense([], true); }
-    
-    function finishDispense(drops=[], isEstop=false) {
+
+    function emergencyStop() { if (!MACHINE.isDispensing) return; showToast("EMERGENCY STOP. Valve closed."); playError(); finishDispense([], true); }
+
+    function finishDispense(drops = [], isEstop = false) {
       clearInterval(window.dispenseInterval); MACHINE.isDispensing = false; stopHum();
       document.getElementById('m-solenoid').innerText = "CLOSED"; document.getElementById('m-solenoid').className = "solenoid";
       document.getElementById('m-stream').style.height = "0"; drops.forEach(d => d.remove());
-      
+
       // Tell mobile app that dispensing is done so it can show payment UI
-      if (window.db && window.fbRef && window.fbSet && MACHINE.sessionId) {
-        window.fbSet(window.fbRef(window.db, 'sessions/' + MACHINE.sessionId), { status: 'complete', ts: Date.now() });
+      if (window.db && window.fbRef && window.fbUpdate && MACHINE.sessionId) {
+        window.fbUpdate(window.fbRef(window.db, 'sessions/' + MACHINE.sessionId), { status: 'complete', ts: Date.now() });
       }
-      
+
       localStorage.setItem('rxTanks', JSON.stringify(MACHINE.tankLevels));
-      if(!isEstop) { playSuccess(); setTimeout(() => showScreen(8, 'Payment', 5), 1500); } else { setTimeout(resetToIdle, 3000); }
+      if (!isEstop) { playSuccess(); setTimeout(() => showScreen(8, 'Payment', 5), 1500); } else { setTimeout(resetToIdle, 3000); }
     }
 
     // --- Screen 8: Payment ---
@@ -1137,24 +2151,31 @@ function scanFrame(timestamp) {
       document.getElementById('pay-summary-text').innerText = `${Math.floor(MACHINE.dispensedMl)}ml ${PRODUCTS[MACHINE.product].name} refilled successfully`;
       setTimeout(() => {
         document.getElementById('success-anim').style.display = 'none'; document.getElementById('payment-box').style.display = 'block';
-        const amt = ((MACHINE.dispensedMl/100) * MACHINE.pricePer100ml).toFixed(2);
+        // Use the authoritative totalAmount from the mobile's QR payload
+        // If quantity was reduced due to low tank, totalAmount was already adjusted proportionally in processQR
+        const amt = MACHINE.totalAmount.toFixed(2);
         document.getElementById('pay-amt').innerText = `₹${amt}`;
-        
+
         let t = 300;
         const timerInt = setInterval(() => {
-          if(MACHINE.screen !== 8) clearInterval(timerInt); t--;
-          document.getElementById('pay-timer').innerText = `${Math.floor(t/60)}:${(t%60).toString().padStart(2,'0')}`;
-          if(t<=0) resetToIdle();
+          if (MACHINE.screen !== 8) clearInterval(timerInt); t--;
+          document.getElementById('pay-timer').innerText = `${Math.floor(t / 60)}:${(t % 60).toString().padStart(2, '0')}`;
+          if (t <= 0) resetToIdle();
         }, 1000);
+
+        // Listen for payment completion from mobile
+        if (window.db && window.fbRef && window.onValue && MACHINE.sessionId) {
+          window.paymentListener = window.onValue(window.fbRef(window.db, 'sessions/' + MACHINE.sessionId), (snap) => {
+            const data = snap.val();
+            if (data && data.status === 'paid') {
+              if (window.paymentListener) { window.paymentListener(); window.paymentListener = null; }
+              clearInterval(timerInt);
+              playSuccess();
+              showScreen(9, "Receipt", 5);
+            }
+          });
+        }
       }, 3000);
-    }
-    
-    function completePayment() {
-      // Mark session as complete so mobile app shows success screen
-      if (window.db && window.fbRef && window.fbSet && MACHINE.sessionId) {
-        window.fbSet(window.fbRef(window.db, 'sessions/' + MACHINE.sessionId), { status: 'complete', ts: Date.now() });
-      }
-      playSuccess(); showScreen(9, "Receipt", 5); 
     }
 
     // --- Screen 9: Receipt ---
@@ -1162,27 +2183,50 @@ function scanFrame(timestamp) {
       const d = new Date();
       document.getElementById('r-date').innerText = d.toLocaleDateString(); document.getElementById('r-time').innerText = d.toLocaleTimeString();
       document.getElementById('r-txn').innerText = MACHINE.sessionId || "TXN-DEMO123";
-      document.getElementById('r-user').innerText = MACHINE.authData.name;
+      document.getElementById('r-user').innerText = MACHINE.authData.name || MACHINE.authData.uid;
       document.getElementById('r-prod').innerText = `${PRODUCTS[MACHINE.product].name} (${Math.floor(MACHINE.dispensedMl)}ml)`;
-      const amt = ((MACHINE.dispensedMl/100) * MACHINE.pricePer100ml).toFixed(2);
-      document.getElementById('r-amt').innerText = `₹${amt}`; document.getElementById('r-unit').innerText = `₹${MACHINE.pricePer100ml.toFixed(2)} / 100ml`;
-      document.getElementById('r-pts').innerText = '+' + Math.floor(MACHINE.dispensedMl/10); document.getElementById('r-co2').innerText = Math.floor(MACHINE.dispensedMl * 0.024) + 'g';
+
+      const subtotal = MACHINE.totalAmount.toFixed(2);
+      document.getElementById('r-subtotal').innerText = `₹${subtotal}`;
+
+      if (window.db && window.fbRef && window.fbGet && MACHINE.sessionId) {
+        window.fbGet(window.fbRef(window.db, 'sessions/' + MACHINE.sessionId)).then((snap) => {
+          const sData = snap.val() || {};
+          if (sData.pointsRedeemed > 0) {
+            document.getElementById('r-points-row').style.display = 'flex';
+            document.getElementById('r-points-redeem').innerText = `-₹${sData.pointsRedeemed.toFixed(2)}`;
+          } else {
+            document.getElementById('r-points-row').style.display = 'none';
+          }
+          const finalAmt = sData.finalAmount !== undefined ? sData.finalAmount.toFixed(2) : subtotal;
+          document.getElementById('r-amt').innerText = `₹${finalAmt}`;
+          if (sData.pointsEarned) {
+            document.getElementById('r-pts').innerText = '+' + sData.pointsEarned;
+          }
+        });
+      } else {
+        document.getElementById('r-amt').innerText = `₹${subtotal}`;
+      }
+
+      document.getElementById('r-unit').innerText = `₹${MACHINE.pricePer100ml.toFixed(2)} / 100ml`;
+      if (!document.getElementById('r-pts').innerText) document.getElementById('r-pts').innerText = '+' + Math.floor(MACHINE.dispensedMl / 10);
+      document.getElementById('r-co2').innerText = Math.floor(MACHINE.dispensedMl * 0.024) + 'g';
       document.getElementById('r-qr').innerHTML = ""; new QRCode(document.getElementById('r-qr'), { text: MACHINE.sessionId, width: 128, height: 128 });
     }
     async function emailReceipt() {
       const btn = document.querySelector('.btn-outline:nth-child(2)');
       btn.innerText = "Sending..."; btn.disabled = true;
-      
+
       const payload = {
-        email: MACHINE.authData.email,
-        name: MACHINE.authData.name,
+        email: MACHINE.authData.email || '',
+        name: MACHINE.authData.name || MACHINE.authData.uid,
         product: PRODUCTS[MACHINE.product].name,
         volume: `${Math.floor(MACHINE.dispensedMl)}ml`,
-        price: `₹${((MACHINE.dispensedMl/100) * MACHINE.pricePer100ml).toFixed(2)}`,
+        price: `₹${MACHINE.totalAmount.toFixed(2)}`,
         date_time: `${document.getElementById('r-date').innerText} ${document.getElementById('r-time').innerText}`,
         txn: MACHINE.sessionId
       };
-      
+
       try {
         const res = await fetch('/send-receipt', {
           method: 'POST',
@@ -1190,15 +2234,15 @@ function scanFrame(timestamp) {
           body: JSON.stringify(payload)
         });
         const data = await res.json();
-        
-        if(data.success) {
+
+        if (data.success) {
           showToast(`Receipt successfully sent to ${MACHINE.authData.email}!`);
           btn.innerText = "Sent ✓";
         } else {
           showToast(`Failed to send: ${data.error}`);
           btn.innerText = "Email Failed";
         }
-      } catch(err) {
+      } catch (err) {
         showToast("Error connecting to email server.");
         btn.innerText = "Email Error";
       }
@@ -1207,20 +2251,20 @@ function scanFrame(timestamp) {
     // --- Maintenance Mode ---
     let pinInput = "";
     function handleMaintTap() { document.getElementById('maintenance-modal').style.display = 'flex'; document.getElementById('maint-pin').style.display = 'block'; document.getElementById('maint-dash').style.display = 'none'; pinInput = ""; updatePinDisplay(); }
-    function enterPin(val) { if(val === 'C') pinInput = ""; else if(pinInput.length < 4) pinInput += val; updatePinDisplay(); }
+    function enterPin(val) { if (val === 'C') pinInput = ""; else if (pinInput.length < 4) pinInput += val; updatePinDisplay(); }
     function updatePinDisplay() { document.getElementById('pin-display').innerText = pinInput.padEnd(4, '_').split('').join(' '); }
     function checkPin() {
-      if(pinInput === "1234") {
+      if (pinInput === "1234") {
         document.getElementById('maint-pin').style.display = 'none'; document.getElementById('maint-dash').style.display = 'flex';
-        ['water','shampoo','detergent','handwash','oil'].forEach(k => document.getElementById('mt-'+k).value = MACHINE.tankLevels[k] || 100);
+        ['shampoo', 'detergent', 'handwash', 'oil'].forEach(k => document.getElementById('mt-' + k).value = MACHINE.tankLevels[k] || 100);
       } else { showToast("Incorrect PIN"); pinInput = ""; updatePinDisplay(); }
     }
     function updateMaintTanks() {
-      ['water','shampoo','detergent','handwash','oil'].forEach(k => MACHINE.tankLevels[k] = document.getElementById('mt-'+k).value);
+      ['shampoo', 'detergent', 'handwash', 'oil'].forEach(k => MACHINE.tankLevels[k] = document.getElementById('mt-' + k).value);
       localStorage.setItem('rxTanks', JSON.stringify(MACHINE.tankLevels));
     }
     function refillAllTanks() {
-      ['water','shampoo','detergent','handwash','oil'].forEach(k => { MACHINE.tankLevels[k] = 100; document.getElementById('mt-'+k).value = 100; });
+      ['shampoo', 'detergent', 'handwash', 'oil'].forEach(k => { MACHINE.tankLevels[k] = 100; document.getElementById('mt-' + k).value = 100; });
       updateMaintTanks(); showToast("All tanks refilled to 100%");
     }
 
@@ -1232,8 +2276,7 @@ function scanFrame(timestamp) {
       if (e.ctrlKey && e.key.toLowerCase() === 'p') { e.preventDefault(); document.body.style.background = "#000"; document.getElementById('screen-container').style.opacity = '0'; setTimeout(() => { document.body.style.background = "var(--bg)"; document.getElementById('screen-container').style.opacity = '1'; showToast("Power restored — resuming session"); }, 1500); }
     });
   </script>
-<div id="toast-message" 
-     style="
+  <div id="toast-message" style="
        position: fixed;
        bottom: 80px;
        left: 50%;
@@ -1247,6 +2290,7 @@ function scanFrame(timestamp) {
        display: none;
        pointer-events: none;
      ">
-</div>
+  </div>
 </body>
+
 </html>
