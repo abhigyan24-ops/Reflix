@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,62 +10,266 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;900&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    :root { --bg: #060f09; --green-bright: #3ecf7a; --green-accent: #2d9e5f; --panel: rgba(10, 23, 14, 0.8); }
-    body { font-family: 'DM Sans', sans-serif; background-color: var(--bg); color: #fff; margin: 0; padding: 0; display: flex; height: 100vh; overflow: hidden; }
-    
-    .sidebar { width: 260px; background: #000; border-right: 1px solid #222; display: flex; flex-direction: column; padding: 1.5rem; }
-    .nav-item { padding: 1rem; border-radius: 0.8rem; color: #888; cursor: pointer; transition: 0.2s; font-weight: bold; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.8rem; }
-    .nav-item:hover { background: rgba(255,255,255,0.05); color: #fff; }
-    .nav-item.active { background: var(--green-accent); color: #000; }
-    
-    .main-content { flex: 1; padding: 2.5rem; overflow-y: auto; background: radial-gradient(circle at top right, #112a1a 0%, var(--bg) 100%); }
-    .page { display: none; animation: fadeIn 0.3s; }
-    .page.active { display: block; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-    
-    .card { background: var(--panel); border: 1px solid rgba(62,207,122,0.1); border-radius: 1.5rem; padding: 1.5rem; backdrop-filter: blur(10px); }
-    .stat-val { font-size: 2.5rem; font-weight: 900; color: var(--green-bright); font-family: monospace; }
-    
-    .tank-visual { width: 80px; height: 150px; background: #000; border: 4px solid #333; border-radius: 10px 10px 4px 4px; position: relative; overflow: hidden; margin: 0 auto; }
-    .tank-fill { position: absolute; bottom: 0; width: 100%; transition: height 0.5s, background 0.5s; }
-    
-    table { width: 100%; border-collapse: collapse; }
-    th, td { padding: 1rem; text-align: left; border-bottom: 1px solid #222; }
-    th { color: #888; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; }
-    
-    .btn { background: var(--green-bright); color: #000; padding: 0.8rem 1.5rem; border-radius: 0.8rem; font-weight: bold; cursor: pointer; border: none; transition: 0.2s; }
-    .btn:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(62,207,122,0.3); }
-    .btn-red { background: #ff4d4d; color: #fff; }
-    .btn-outline { background: transparent; border: 1px solid var(--green-bright); color: var(--green-bright); }
-    .btn-outline:hover { background: var(--green-bright); color: #000; }
-    
-    input, select { background: #111; border: 1px solid #333; color: #fff; padding: 0.8rem; border-radius: 0.5rem; width: 100%; font-family: inherit; }
+    :root {
+      --bg: #060f09;
+      --green-bright: #3ecf7a;
+      --green-accent: #2d9e5f;
+      --panel: rgba(10, 23, 14, 0.8);
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background-color: var(--bg);
+      color: #fff;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .sidebar {
+      width: 260px;
+      background: #000;
+      border-right: 1px solid #222;
+      display: flex;
+      flex-direction: column;
+      padding: 1.5rem;
+    }
+
+    .nav-item {
+      padding: 1rem;
+      border-radius: 0.8rem;
+      color: #888;
+      cursor: pointer;
+      transition: 0.2s;
+      font-weight: bold;
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+    }
+
+    .nav-item:hover {
+      background: rgba(255, 255, 255, 0.05);
+      color: #fff;
+    }
+
+    .nav-item.active {
+      background: var(--green-accent);
+      color: #000;
+    }
+
+    .main-content {
+      flex: 1;
+      padding: 2.5rem;
+      overflow-y: auto;
+      background: radial-gradient(circle at top right, #112a1a 0%, var(--bg) 100%);
+    }
+
+    .page {
+      display: none;
+      animation: fadeIn 0.3s;
+    }
+
+    .page.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid rgba(62, 207, 122, 0.1);
+      border-radius: 1.5rem;
+      padding: 1.5rem;
+      backdrop-filter: blur(10px);
+    }
+
+    .stat-val {
+      font-size: 2.5rem;
+      font-weight: 900;
+      color: var(--green-bright);
+      font-family: monospace;
+    }
+
+    .tank-visual {
+      width: 80px;
+      height: 150px;
+      background: #000;
+      border: 4px solid #333;
+      border-radius: 10px 10px 4px 4px;
+      position: relative;
+      overflow: hidden;
+      margin: 0 auto;
+    }
+
+    .tank-fill {
+      position: absolute;
+      bottom: 0;
+      width: 100%;
+      transition: height 0.5s, background 0.5s;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th,
+    td {
+      padding: 1rem;
+      text-align: left;
+      border-bottom: 1px solid #222;
+    }
+
+    th {
+      color: #888;
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .btn {
+      background: var(--green-bright);
+      color: #000;
+      padding: 0.8rem 1.5rem;
+      border-radius: 0.8rem;
+      font-weight: bold;
+      cursor: pointer;
+      border: none;
+      transition: 0.2s;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(62, 207, 122, 0.3);
+    }
+
+    .btn-red {
+      background: #ff4d4d;
+      color: #fff;
+    }
+
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--green-bright);
+      color: var(--green-bright);
+    }
+
+    .btn-outline:hover {
+      background: var(--green-bright);
+      color: #000;
+    }
+
+    input,
+    select {
+      background: #111;
+      border: 1px solid #333;
+      color: #fff;
+      padding: 0.8rem;
+      border-radius: 0.5rem;
+      width: 100%;
+      font-family: inherit;
+    }
 
     /* Health Monitor specific */
-    .gauge-svg { width: 200px; height: 200px; transform: rotate(-90deg); }
-    .gauge-circle { fill: none; stroke-width: 12; stroke-linecap: round; }
-    .gauge-bg { stroke: #222; }
-    .gauge-value { stroke: #3ecf7a; transition: stroke-dasharray 0.5s ease, stroke 0.5s ease; }
-    
-    .sensor-card { background: rgba(20, 20, 20, 0.6); backdrop-filter: blur(8px); border: 1px solid #333; border-radius: 1rem; padding: 1rem; position: relative; overflow: hidden; transition: 0.3s; }
-    .sensor-card.error { border-color: #ff4d4d; animation: pulseRed 2s infinite; }
-    @keyframes pulseRed { 0% { box-shadow: 0 0 0 0 rgba(255, 77, 77, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(255, 77, 77, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 77, 77, 0); } }
-    
-    .sparkline { width: 100%; height: 40px; margin-top: 10px; }
-    
+    .gauge-svg {
+      width: 200px;
+      height: 200px;
+      transform: rotate(-90deg);
+    }
+
+    .gauge-circle {
+      fill: none;
+      stroke-width: 12;
+      stroke-linecap: round;
+    }
+
+    .gauge-bg {
+      stroke: #222;
+    }
+
+    .gauge-value {
+      stroke: #3ecf7a;
+      transition: stroke-dasharray 0.5s ease, stroke 0.5s ease;
+    }
+
+    .sensor-card {
+      background: rgba(20, 20, 20, 0.6);
+      backdrop-filter: blur(8px);
+      border: 1px solid #333;
+      border-radius: 1rem;
+      padding: 1rem;
+      position: relative;
+      overflow: hidden;
+      transition: 0.3s;
+    }
+
+    .sensor-card.error {
+      border-color: #ff4d4d;
+      animation: pulseRed 2s infinite;
+    }
+
+    @keyframes pulseRed {
+      0% {
+        box-shadow: 0 0 0 0 rgba(255, 77, 77, 0.4);
+      }
+
+      70% {
+        box-shadow: 0 0 0 10px rgba(255, 77, 77, 0);
+      }
+
+      100% {
+        box-shadow: 0 0 0 0 rgba(255, 77, 77, 0);
+      }
+    }
+
+    .sparkline {
+      width: 100%;
+      height: 40px;
+      margin-top: 10px;
+    }
+
     /* Connection Banner */
-    #connection-banner { display: none; position: fixed; top: 0; left: 0; width: 100%; background: #f0b429; color: #000; text-align: center; font-weight: bold; padding: 0.5rem; z-index: 9999; }
+    #connection-banner {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      background: #f0b429;
+      color: #000;
+      text-align: center;
+      font-weight: bold;
+      padding: 0.5rem;
+      z-index: 9999;
+    }
   </style>
 </head>
+
 <body>
   <div id="connection-banner">Offline mode — using cached data</div>
 
   <!-- Sidebar -->
   <div class="sidebar mt-6">
-    <div class="text-3xl font-black text-[#3ecf7a] mb-10 tracking-tight">RefillX<span class="text-white">Admin</span></div>
-    
+    <div class="text-3xl font-black text-[#3ecf7a] mb-10 tracking-tight">RefillX<span class="text-white">Admin</span>
+    </div>
+
     <div class="nav-item active" data-page="dashboard" onclick="switchPage('dashboard')">📊 Dashboard</div>
-    <div class="nav-item relative" data-page="health" onclick="switchPage('health')">🔴 Health Monitor <span id="alert-badge" class="hidden absolute top-2 right-2 bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full">0</span></div>
+    <div class="nav-item relative" data-page="health" onclick="switchPage('health')">🔴 Health Monitor <span
+        id="alert-badge"
+        class="hidden absolute top-2 right-2 bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full">0</span></div>
     <div class="nav-item" data-page="inventory" onclick="switchPage('inventory')">💧 Inventory</div>
     <div class="nav-item" data-page="orders" onclick="switchPage('orders')">📦 Supplier Orders</div>
     <div class="nav-item" data-page="analytics" onclick="switchPage('analytics')">📈 Analytics</div>
@@ -84,12 +289,24 @@
     <!-- Page 1: Dashboard -->
     <div id="page-dashboard" class="page active">
       <div class="grid grid-cols-4 gap-6 mb-8">
-        <div class="card"><div class="text-gray-400 text-sm font-bold uppercase mb-2">Total Revenue</div><div class="stat-val" id="d-rev">₹0</div></div>
-        <div class="card"><div class="text-gray-400 text-sm font-bold uppercase mb-2">Total Sessions</div><div class="stat-val text-white" id="d-sessions">0</div></div>
-        <div class="card"><div class="text-gray-400 text-sm font-bold uppercase mb-2">Plastic Saved (Bottles)</div><div class="stat-val" id="d-plastic">0</div></div>
-        <div class="card"><div class="text-gray-400 text-sm font-bold uppercase mb-2">Avg Session Time</div><div class="stat-val text-white" id="d-avg-time">0s</div></div>
+        <div class="card">
+          <div class="text-gray-400 text-sm font-bold uppercase mb-2">Total Revenue</div>
+          <div class="stat-val" id="d-rev">₹0</div>
+        </div>
+        <div class="card">
+          <div class="text-gray-400 text-sm font-bold uppercase mb-2">Total Sessions</div>
+          <div class="stat-val text-white" id="d-sessions">0</div>
+        </div>
+        <div class="card">
+          <div class="text-gray-400 text-sm font-bold uppercase mb-2">Plastic Saved (Bottles)</div>
+          <div class="stat-val" id="d-plastic">0</div>
+        </div>
+        <div class="card">
+          <div class="text-gray-400 text-sm font-bold uppercase mb-2">Avg Session Time</div>
+          <div class="stat-val text-white" id="d-avg-time">0s</div>
+        </div>
       </div>
-      
+
       <div class="grid grid-cols-3 gap-6">
         <div class="card col-span-2">
           <h2 class="text-xl font-bold mb-4 text-[#86efac]">Revenue Trend (Last 7 Days)</h2>
@@ -102,7 +319,7 @@
           <div id="d-recent-activity"></div>
         </div>
       </div>
-      
+
       <div class="grid grid-cols-2 gap-6 mt-6">
         <div class="card">
           <h2 class="text-xl font-bold mb-4 text-[#86efac]">Comparative Analytics (This vs Last Week)</h2>
@@ -123,7 +340,8 @@
           <div class="relative w-[200px] h-[200px]">
             <svg class="gauge-svg" viewBox="0 0 100 100">
               <circle class="gauge-circle gauge-bg" cx="50" cy="50" r="40" />
-              <circle id="health-gauge" class="gauge-circle gauge-value" cx="50" cy="50" r="40" stroke-dasharray="0 251.2" />
+              <circle id="health-gauge" class="gauge-circle gauge-value" cx="50" cy="50" r="40"
+                stroke-dasharray="0 251.2" />
             </svg>
             <div class="absolute inset-0 flex flex-col items-center justify-center">
               <span id="health-score-val" class="text-4xl font-black">100</span>
@@ -160,28 +378,29 @@
       <div class="grid grid-cols-3 gap-6">
         <div class="card col-span-2">
           <div class="flex justify-between mb-4">
-             <h2 class="text-xl font-bold text-[#86efac]">Alert Feed</h2>
-             <button class="text-xs text-gray-400 hover:text-white" onclick="clearAlerts()">Clear All</button>
+            <h2 class="text-xl font-bold text-[#86efac]">Alert Feed</h2>
+            <button class="text-xs text-gray-400 hover:text-white" onclick="clearAlerts()">Clear All</button>
           </div>
           <div id="alert-feed" class="flex flex-col gap-2 max-h-[300px] overflow-y-auto">
-             <!-- Alerts go here -->
+            <!-- Alerts go here -->
           </div>
         </div>
-        
+
         <div class="card bg-[#1a0f0f] border-red-900/30">
           <h2 class="text-xl font-bold mb-4 text-red-400">Simulate Hardware Events</h2>
           <div class="flex flex-col gap-3">
-             <select id="sim-sensor" class="bg-black">
-               <option value="ultrasonic">Ultrasonic (HC-SR04)</option>
-               <option value="flowSensor">Flow Sensor (YF-S201)</option>
-               <option value="temperature">Temperature (DS18B20)</option>
-               <option value="tds">TDS Sensor</option>
-               <option value="qrScanner">QR Scanner (OV2640)</option>
-             </select>
-             <button class="btn btn-red w-full" onclick="simError()">Simulate Sensor Error</button>
-             <button class="btn btn-outline border-yellow-500 text-yellow-500 hover:bg-yellow-500 w-full" onclick="simOffline()">Simulate Station Offline</button>
-             <button class="btn btn-outline w-full" onclick="simScoreDrop()">Simulate Score Drop</button>
-             <button class="btn w-full mt-4" onclick="restoreAll()">Restore All Sensors</button>
+            <select id="sim-sensor" class="bg-black">
+              <option value="ultrasonic">Ultrasonic (HC-SR04)</option>
+              <option value="flowSensor">Flow Sensor (YF-S201)</option>
+              <option value="temperature">Temperature (DS18B20)</option>
+              <option value="tds">TDS Sensor</option>
+              <option value="qrScanner">QR Scanner (OV2640)</option>
+            </select>
+            <button class="btn btn-red w-full" onclick="simError()">Simulate Sensor Error</button>
+            <button class="btn btn-outline border-yellow-500 text-yellow-500 hover:bg-yellow-500 w-full"
+              onclick="simOffline()">Simulate Station Offline</button>
+            <button class="btn btn-outline w-full" onclick="simScoreDrop()">Simulate Score Drop</button>
+            <button class="btn w-full mt-4" onclick="restoreAll()">Restore All Sensors</button>
           </div>
         </div>
       </div>
@@ -201,13 +420,30 @@
       <div class="grid grid-cols-3 gap-6">
         <div class="card col-span-1">
           <h2 class="text-xl font-bold mb-4 text-[#3ecf7a]">Place Order</h2>
-          <select id="so-product" class="mb-4"><option value="water">RO Water</option><option value="shampoo">Shampoo</option><option value="detergent">Liquid Detergent</option><option value="handwash">Handwash</option><option value="oil">Cooking Oil</option></select>
+          <select id="so-product" class="mb-4">
+            <option value="water">RO Water</option>
+            <option value="shampoo">Shampoo</option>
+            <option value="detergent">Liquid Detergent</option>
+            <option value="handwash">Handwash</option>
+            <option value="oil">Cooking Oil</option>
+          </select>
           <input type="number" id="so-qty" placeholder="Quantity (Liters)" class="mb-4">
           <button class="btn w-full" onclick="placeSupplierOrder()">Submit Order</button>
         </div>
         <div class="card col-span-2">
           <h2 class="text-xl font-bold mb-4 text-[#3ecf7a]">Order History</h2>
-          <table><thead><tr><th>ID</th><th>Product</th><th>Qty (L)</th><th>Status</th><th>Action</th></tr></thead><tbody id="so-table-body"></tbody></table>
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Product</th>
+                <th>Qty (L)</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="so-table-body"></tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -221,7 +457,19 @@
       <div class="card">
         <h2 class="text-xl font-bold mb-4 text-[#3ecf7a]">Raw Session Log</h2>
         <div style="max-height: 400px; overflow-y: auto;">
-          <table><thead><tr><th>Time</th><th>User/Station</th><th>Product</th><th>Vol (ml)</th><th>Revenue (₹)</th><th>Duration (s)</th></tr></thead><tbody id="al-table-body"></tbody></table>
+          <table>
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>User/Station</th>
+                <th>Product</th>
+                <th>Vol (ml)</th>
+                <th>Revenue (₹)</th>
+                <th>Duration (s)</th>
+              </tr>
+            </thead>
+            <tbody id="al-table-body"></tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -236,12 +484,15 @@
         </div>
         <div class="card">
           <h2 class="text-xl font-bold mb-6 text-red-500">Danger Zone</h2>
-          <p class="text-gray-400 mb-4">Wipe all session data, orders, and reset tanks to default. This cannot be undone.</p>
+          <p class="text-gray-400 mb-4">Wipe all session data, orders, and reset tanks to default. This cannot be
+            undone.</p>
           <button class="btn btn-red w-full" onclick="factoryReset()">Factory Reset Admin Panel</button>
         </div>
       </div>
     </div>
   </div>
+  <script src="config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <script type="module">
     let STATE = {
@@ -286,193 +537,212 @@
           if (recentlyAutoOrdered.has(k)) return;
           recentlyAutoOrdered.add(k);
           setTimeout(() => recentlyAutoOrdered.delete(k), 5000);
-          
-          safePush('orders', {
-            product: k,
+
+          supabase.from('orders').insert({
+            station_id: 'RFX-001',
+            liquid: k,
             quantity: REORDER_QTY_LITERS,
-            supplier: 'AquaPure Supplies',
-            status: 'pending',
-            orderDate: Date.now(),
-            source: 'auto'
+            trigger_type: 'auto',
+            status: 'pending'
+          }).then(() => {
+            window.addAlert(`${PRODUCTS[k].name} is out of stock — auto-order placed for ${REORDER_QTY_LITERS}L`, 'error');
           });
-          window.addAlert(`${PRODUCTS[k].name} is out of stock — auto-order placed for ${REORDER_QTY_LITERS}L`, 'error');
         }
       });
     }
 
-    window.manualOrderNow = function(productKey) {
+    window.manualOrderNow = function (productKey) {
       if (hasPendingOrder(productKey)) {
         alert(`${PRODUCTS[productKey].name} already has a pending order.`);
         return;
       }
       const qty = prompt(`Quantity to order for ${PRODUCTS[productKey].name} (liters):`, REORDER_QTY_LITERS);
       const q = parseFloat(qty);
-      if (!Number.isFinite(q) || q <= 0) return; // user cancelled or entered garbage — silently abort
-      safePush('orders', {
-        product: productKey,
+      if (!Number.isFinite(q) || q <= 0) return;
+      supabase.from('orders').insert({
+        station_id: 'RFX-001',
+        liquid: productKey,
         quantity: q,
-        supplier: 'AquaPure Supplies',
-        status: 'pending',
-        orderDate: Date.now(),
-        source: 'manual'
+        trigger_type: 'manual',
+        status: 'pending'
+      }).then(() => {
+        window.addAlert(`Manual order placed for ${PRODUCTS[productKey].name}: ${q}L`, 'success');
       });
-      window.addAlert(`Manual order placed for ${PRODUCTS[productKey].name}: ${q}L`, 'success');
     }
 
-    // === LOCAL CLOUD CLIENT (Replacing Firebase) ===
-    const CLOUD_URL = window.location.origin;
-    
-    // Polyfill Firebase functions for compatibility
-    window.db = "LocalCloud";
-    window.fbRef = (db, path) => path;
-    
-    // Offline Queue System
-    function getPending() { return JSON.parse(localStorage.getItem('rxPendingWrites') || '[]'); }
-    function savePending(writes) { localStorage.setItem('rxPendingWrites', JSON.stringify(writes)); }
+    // === SUPABASE CLIENT ===
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const STATION_ID = 'RFX-001';
 
-    window.safeSet = async function(path, data) {
+    async function loadInitialData() {
       try {
-        if(!STATE.isOnline) throw new Error("Offline");
-        await fetch(CLOUD_URL + '/api/set', { method:'POST', body: JSON.stringify({path, data}) });
-        localStorage.setItem('cache_' + path, JSON.stringify(data));
-      } catch(e) {
-        const p = getPending(); p.push({ action: 'set', path, data }); savePending(p);
-        localStorage.setItem('cache_' + path, JSON.stringify(data));
-      }
-    }
-    
-    window.safePush = async function(path, data) {
-      try {
-        if(!STATE.isOnline) throw new Error("Offline");
-        await fetch(CLOUD_URL + '/api/push', { method:'POST', body: JSON.stringify({path, data}) });
-      } catch(e) {
-        const p = getPending(); p.push({ action: 'push', path, data }); savePending(p);
-      }
-    }
-
-    window.safeUpdate = async function(path, data) {
-      try {
-        if(!STATE.isOnline) throw new Error("Offline");
-        await fetch(CLOUD_URL + '/api/update', { method:'POST', body: JSON.stringify({path, data}) });
-      } catch(e) {
-        const p = getPending(); p.push({ action: 'update', path, data }); savePending(p);
-      }
-    }
-
-    // Connection Monitor Handled By Polling
-    // Subscriptions to Firebase Paths
-    
-    let GLOBAL_STATE = {};
-    const listeners = [];
-
-    window.safeOnValue = function(path, callback, defaultCache = null) {
-      listeners.push({ path, callback });
-      const cached = localStorage.getItem('cache_' + path);
-      if(cached) callback(JSON.parse(cached));
-      else if(defaultCache) callback(defaultCache);
-    }
-
-    function getByPath(d, p) {
-      const keys = p.split('/').filter(k=>k);
-      let curr = d;
-      for(let k of keys) { if(curr && curr[k] !== undefined) curr = curr[k]; else return null; }
-      return curr;
-    }
-
-    setInterval(async () => {
-      try {
-        const res = await fetch(CLOUD_URL + '/api/sync');
-        if(!res.ok) throw new Error("Server error");
-        const data = await res.json();
-        
-        if(!STATE.isOnline) {
-          STATE.isOnline = true;
-          const pending = getPending();
-          if(pending.length > 0) {
-             for(let task of pending) {
-               try { await fetch(CLOUD_URL + '/api/' + task.action, { method:'POST', body: JSON.stringify({path:task.path, data:task.data}) }); } catch(e){}
-             }
-             savePending([]);
-          }
+        const { data: tanksData } = await supabase.from('tanks').select('*').eq('station_id', STATION_ID);
+        if (tanksData) {
+          tanksData.forEach(t => STATE.tanks[t.liquid] = parseFloat(t.level));
         }
-        
-        GLOBAL_STATE = data;
-        listeners.forEach(l => {
-           const val = getByPath(data, l.path);
-           if(val !== null) {
-             localStorage.setItem('cache_' + l.path, JSON.stringify(val));
-             l.callback(val);
-           }
-        });
-        
+
+        const { data: sensorsData } = await supabase.from('sensors').select('*').eq('station_id', STATION_ID);
+        if (sensorsData && sensorsData.length > 0) {
+          sensorsData.forEach(s => {
+            STATE.health.sensors[s.sensor_key] = {
+              status: s.status,
+              lastReading: s.last_reading,
+              lastUpdate: new Date(s.last_update).getTime()
+            };
+          });
+        } else {
+          seedSensorsIfEmpty(STATE.health);
+        }
+
+        const { data: sessionsData } = await supabase.from('sessions').select('*').eq('station_id', STATION_ID).order('created_at', { ascending: false }).limit(50);
+        if (sessionsData) {
+          STATE.logs = sessionsData.map(s => ({
+            userId: s.user_id,
+            stationId: s.station_id,
+            product: s.product_name,
+            quantity: s.qty,
+            amount: s.amt,
+            duration: 0,
+            timestamp: new Date(s.created_at).getTime()
+          })).sort((a, b) => a.timestamp - b.timestamp);
+        }
+
+        const { data: ordersData } = await supabase.from('orders').select('*').eq('station_id', STATION_ID).order('created_at', { ascending: false });
+        if (ordersData) {
+          STATE.orders = ordersData.map(o => ({
+            dbKey: o.id,
+            product: o.liquid,
+            quantity: o.quantity,
+            status: o.status,
+            source: o.trigger_type,
+            orderDate: new Date(o.created_at).getTime()
+          }));
+        }
+
+        const { data: pricesData } = await supabase.from('prices').select('*');
+        if (pricesData) {
+          pricesData.forEach(p => STATE.prices[p.liquid] = parseFloat(p.price));
+        }
+
+        STATE.isOnline = true;
         const b = document.getElementById('conn-badge');
-        if(b) { b.innerText = "● LIVE SYNC"; b.className = "text-sm font-mono px-3 py-1 rounded-full border text-[#3ecf7a] bg-[#0a170e] border-[#1f6b3e]"; }
-        if(document.getElementById('connection-banner')) document.getElementById('connection-banner').style.display = 'none';
-      } catch(e) {
-        STATE.isOnline = false;
-        const b = document.getElementById('conn-badge');
-        if(b) { b.innerText = "● CACHED"; b.className = "text-sm font-mono px-3 py-1 rounded-full border text-[#f0b429] bg-[#2a1e0b] border-[#806115]"; }
-        if(document.getElementById('connection-banner')) document.getElementById('connection-banner').style.display = 'block';
+        if (b) { b.innerText = "● LIVE SYNC"; b.className = "text-sm font-mono px-3 py-1 rounded-full border text-[#3ecf7a] bg-[#0a170e] border-[#1f6b3e]"; }
+        if (document.getElementById('connection-banner')) document.getElementById('connection-banner').style.display = 'none';
+
+        refreshData();
+      } catch (e) {
+        console.error("Failed to load from Supabase:", e);
       }
-    }, 1500);
+    }
+
+    async function loadOrders() {
+      const { data: ordersData } = await supabase.from('orders').select('*').eq('station_id', STATION_ID).order('created_at', { ascending: false });
+      if (ordersData) {
+        STATE.orders = ordersData.map(o => ({
+          dbKey: o.id,
+          product: o.liquid,
+          quantity: o.quantity,
+          status: o.status,
+          source: o.trigger_type,
+          orderDate: new Date(o.created_at).getTime()
+        }));
+        refreshData();
+      }
+    }
+
+    function setupRealtime() {
+      supabase.channel('dashboard-tanks')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'tanks' }, payload => {
+          if (payload.new && payload.new.station_id === STATION_ID) {
+            STATE.tanks[payload.new.liquid] = parseFloat(payload.new.level);
+            refreshData();
+          }
+        }).subscribe();
+
+      supabase.channel('dashboard-sensors')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'sensors' }, payload => {
+          if (payload.new && payload.new.station_id === STATION_ID) {
+            STATE.health.sensors[payload.new.sensor_key] = {
+              status: payload.new.status,
+              lastReading: payload.new.last_reading,
+              lastUpdate: new Date(payload.new.last_update).getTime()
+            };
+          }
+        }).subscribe();
+
+      supabase.channel('dashboard-sessions')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'sessions' }, payload => {
+          if (payload.new && payload.new.station_id === STATION_ID) {
+            STATE.logs.push({
+              userId: payload.new.user_id,
+              stationId: payload.new.station_id,
+              product: payload.new.product_name,
+              quantity: payload.new.qty,
+              amount: payload.new.amt,
+              duration: 0,
+              timestamp: new Date(payload.new.created_at).getTime()
+            });
+            refreshData();
+          }
+        }).subscribe();
+
+      supabase.channel('dashboard-orders')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, payload => {
+          loadOrders();
+        }).subscribe();
+    }
 
     const DEFAULT_SENSORS = {
-      ultrasonic:  { status: 'ok', lastReading: '12.4 cm', lastUpdate: Date.now() },
-      flowSensor:  { status: 'ok', lastReading: '0 L/min',  lastUpdate: Date.now() },
-      temperature: { status: 'ok', lastReading: '24.5 °C',  lastUpdate: Date.now() },
-      tds:         { status: 'ok', lastReading: '180 ppm',  lastUpdate: Date.now() },
-      qrScanner:   { status: 'ok', lastReading: 'Ready',    lastUpdate: Date.now() }
+      ultrasonic: { status: 'ok', lastReading: '12.4 cm', lastUpdate: Date.now() },
+      flowSensor: { status: 'ok', lastReading: '0 L/min', lastUpdate: Date.now() },
+      temperature: { status: 'ok', lastReading: '24.5 °C', lastUpdate: Date.now() },
+      tds: { status: 'ok', lastReading: '180 ppm', lastUpdate: Date.now() },
+      qrScanner: { status: 'ok', lastReading: 'Ready', lastUpdate: Date.now() }
     };
 
     function seedSensorsIfEmpty(healthObj) {
       if (!healthObj.sensors || Object.keys(healthObj.sensors).length === 0) {
         healthObj.sensors = DEFAULT_SENSORS;
-        safeUpdate('stations/RFX-001/health/sensors', DEFAULT_SENSORS);
+        Object.keys(DEFAULT_SENSORS).forEach(k => {
+          supabase.from('sensors').upsert({
+            station_id: STATION_ID,
+            sensor_key: k,
+            status: DEFAULT_SENSORS[k].status,
+            last_reading: DEFAULT_SENSORS[k].lastReading,
+            last_update: new Date().toISOString()
+          });
+        });
       }
       return healthObj;
     }
 
-    const DEFAULT_HEALTH_WITH_SENSORS = seedSensorsIfEmpty({ ...STATE.health });
-
-    safeOnValue('stations/RFX-001/tanks', (val) => { if(val) STATE.tanks = val; refreshData(); }, STATE.tanks);
-    safeOnValue('stations/RFX-001/health', (val) => {
-      if(val) STATE.health = seedSensorsIfEmpty(val);
-    }, DEFAULT_HEALTH_WITH_SENSORS);
-    safeOnValue('settings/prices', (val) => { if(val) STATE.prices = val; refreshData(); }, {});
-    safeOnValue('sessions', (val) => {
-      if(val) STATE.logs = Object.values(val).sort((a,b) => a.timestamp - b.timestamp);
-      refreshData();
-    }, []);
-    safeOnValue('orders', (val) => {
-      if(val) STATE.orders = Object.keys(val).map(k => ({ dbKey: k, ...val[k] }));
-      refreshData();
-    }, []);
+    loadInitialData().then(setupRealtime);
 
     // Tab Switching
-    window.switchPage = function(pageId) {
+    window.switchPage = function (pageId) {
       document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
       document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-      
+
       const targetPage = document.getElementById('page-' + pageId);
-      if(targetPage) targetPage.classList.add('active');
-      
+      if (targetPage) targetPage.classList.add('active');
+
       const navItem = document.querySelector(`.nav-item[data-page="${pageId}"]`);
-      if(navItem) navItem.classList.add('active');
-      
+      if (navItem) navItem.classList.add('active');
+
       const title = document.getElementById('page-title');
-      if(title) title.innerText = pageId.charAt(0).toUpperCase() + pageId.slice(1);
-      
+      if (title) title.innerText = pageId.charAt(0).toUpperCase() + pageId.slice(1);
+
       // Clear alert badge if opening health
-      if(pageId === 'health') {
+      if (pageId === 'health') {
         STATE.unreadAlerts = 0;
         const alertBadge = document.getElementById('alert-badge');
-        if(alertBadge) alertBadge.classList.add('hidden');
+        if (alertBadge) alertBadge.classList.add('hidden');
       }
     }
 
     // Health Monitor Engine
     let sparklines = { ultrasonic: [], flowSensor: [], temperature: [], tds: [], qrScanner: [] };
-    
+
     function playAlertSound() {
       const actx = new (window.AudioContext || window.webkitAudioContext)();
       const osc = actx.createOscillator();
@@ -483,29 +753,29 @@
       gain.gain.value = 0.1;
       osc.start(); osc.stop(actx.currentTime + 0.4);
     }
-    
-    window.addAlert = function(msg, severity='warning') {
+
+    window.addAlert = function (msg, severity = 'warning') {
       const icon = severity === 'error' ? '🔴' : (severity === 'warning' ? '⚠️' : '✅');
       STATE.alerts.unshift({ msg, severity, icon, time: Date.now() });
-      if(STATE.alerts.length > 50) STATE.alerts.pop();
-      if(severity === 'error') playAlertSound();
-      
+      if (STATE.alerts.length > 50) STATE.alerts.pop();
+      if (severity === 'error') playAlertSound();
+
       // Badge update
-      if(!document.getElementById('page-health').classList.contains('active')) {
+      if (!document.getElementById('page-health').classList.contains('active')) {
         STATE.unreadAlerts = (STATE.unreadAlerts || 0) + 1;
         const b = document.getElementById('alert-badge');
         b.innerText = STATE.unreadAlerts; b.classList.remove('hidden');
       }
       renderAlerts();
     }
-    
-    window.clearAlerts = function() { STATE.alerts = []; renderAlerts(); }
-    
+
+    window.clearAlerts = function () { STATE.alerts = []; renderAlerts(); }
+
     function renderAlerts() {
       const feed = document.getElementById('alert-feed');
-      if(!feed) return;
+      if (!feed) return;
       feed.innerHTML = STATE.alerts.map(a => `
-        <div class="flex justify-between items-center p-3 rounded bg-[#111] border-l-4 ${a.severity==='error'?'border-red-500':(a.severity==='warning'?'border-yellow-500':'border-green-500')}">
+        <div class="flex justify-between items-center p-3 rounded bg-[#111] border-l-4 ${a.severity === 'error' ? 'border-red-500' : (a.severity === 'warning' ? 'border-yellow-500' : 'border-green-500')}">
            <div><span class="mr-2">${a.icon}</span> ${a.msg}</div>
            <div class="text-xs text-gray-500">${new Date(a.time).toLocaleTimeString()}</div>
         </div>
@@ -513,62 +783,62 @@
     }
 
     let currentScoreDisplay = 100;
-    
+
     function calculateHealthScore() {
-      if(!STATE.health || !STATE.health.sensors) return 100;
+      if (!STATE.health || !STATE.health.sensors) return 100;
       let score = 100;
       const now = Date.now();
-      
+
       let activeAlerts = 0;
-      
+
       Object.entries(STATE.health.sensors).forEach(([k, s]) => {
-        if(s.status === 'error') { score -= 15; activeAlerts++; }
-        if(s.status === 'warning') { score -= 7; activeAlerts++; }
-        if(now - s.lastUpdate > 30000) { score -= 10; activeAlerts++; }
+        if (s.status === 'error') { score -= 15; activeAlerts++; }
+        if (s.status === 'warning') { score -= 7; activeAlerts++; }
+        if (now - s.lastUpdate > 30000) { score -= 10; activeAlerts++; }
       });
-      
+
       let pingAge = Math.floor((now - STATE.health.lastPing) / 1000);
-      if(pingAge > 15) { score -= 20; activeAlerts++; }
-      
+      if (pingAge > 15) { score -= 20; activeAlerts++; }
+
       document.getElementById('health-ping').innerText = pingAge + 's ago';
       document.getElementById('health-alerts-count').innerText = activeAlerts;
-      
+
       score = Math.max(0, score);
-      
+
       // Update DB if score drifted significantly (simulated backend logic)
       if (Math.abs(STATE.health.score - score) > 5) {
-         if(score < 50 && STATE.health.score >= 50) window.addAlert("Health score dropped to " + score, 'error');
-         if(score >= 80 && STATE.health.score < 80) window.addAlert("Station health restored — score: " + score, 'success');
-         // local memory update to prevent spam
-         STATE.health.score = score;
+        if (score < 50 && STATE.health.score >= 50) window.addAlert("Health score dropped to " + score, 'error');
+        if (score >= 80 && STATE.health.score < 80) window.addAlert("Station health restored — score: " + score, 'success');
+        // local memory update to prevent spam
+        STATE.health.score = score;
       }
-      
+
       return score;
     }
 
     function renderHealthMonitor() {
-      if(!document.getElementById('page-health').classList.contains('active')) return;
-      
+      if (!document.getElementById('page-health').classList.contains('active')) return;
+
       const targetScore = calculateHealthScore();
-      
+
       // Smooth animation for gauge
-      if(currentScoreDisplay < targetScore) currentScoreDisplay++;
-      if(currentScoreDisplay > targetScore) currentScoreDisplay--;
-      
+      if (currentScoreDisplay < targetScore) currentScoreDisplay++;
+      if (currentScoreDisplay > targetScore) currentScoreDisplay--;
+
       document.getElementById('health-score-val').innerText = currentScoreDisplay;
-      
+
       const gauge = document.getElementById('health-gauge');
       const offset = 251.2 - (251.2 * (currentScoreDisplay / 100));
       gauge.style.strokeDasharray = `${251.2 - offset} 251.2`;
-      
+
       let color = '#3ecf7a'; let label = 'Excellent';
-      if(currentScoreDisplay < 80) { color = '#f0b429'; label = 'Degraded'; }
-      if(currentScoreDisplay < 50) { color = '#ff4d4d'; label = 'Critical'; }
-      
+      if (currentScoreDisplay < 80) { color = '#f0b429'; label = 'Degraded'; }
+      if (currentScoreDisplay < 50) { color = '#ff4d4d'; label = 'Critical'; }
+
       gauge.style.stroke = color;
       document.getElementById('health-score-label').innerText = label;
       document.getElementById('health-score-label').style.color = color;
-      
+
       // Render Sensors
       const SENSOR_META = {
         ultrasonic: { name: 'Ultrasonic', model: 'HC-SR04', pin: 'GPIO14/27' },
@@ -577,26 +847,26 @@
         tds: { name: 'TDS Sensor', model: 'Generic', pin: 'GPIO34' },
         qrScanner: { name: 'QR Scanner', model: 'OV2640', pin: 'PWDN32' }
       };
-      
+
       const now = Date.now();
       let html = '';
       Object.entries(STATE.health.sensors || {}).forEach(([k, s]) => {
-         const meta = SENSOR_META[k];
-         const age = Math.floor((now - s.lastUpdate)/1000);
-         let renderStatus = s.status;
-         if(age > 30) renderStatus = 'offline';
-         
-         let sColor = renderStatus === 'ok' ? 'text-green-500' : (renderStatus === 'error' ? 'text-red-500' : (renderStatus==='offline'?'text-gray-500':'text-yellow-500'));
-         let bgBadge = renderStatus === 'ok' ? 'bg-green-500/20' : (renderStatus === 'error' ? 'bg-red-500/20' : 'bg-gray-500/20');
-         
-         // Update sparkline
-         let valNum = parseFloat(s.lastReading) || 0;
-         sparklines[k].push(valNum);
-         if(sparklines[k].length > 20) sparklines[k].shift();
-         const maxV = Math.max(...sparklines[k], 1);
-         const pts = sparklines[k].map((v, i) => `${(i/19)*100},${40 - (v/maxV)*40}`).join(' ');
-         
-         html += `
+        const meta = SENSOR_META[k];
+        const age = Math.floor((now - s.lastUpdate) / 1000);
+        let renderStatus = s.status;
+        if (age > 30) renderStatus = 'offline';
+
+        let sColor = renderStatus === 'ok' ? 'text-green-500' : (renderStatus === 'error' ? 'text-red-500' : (renderStatus === 'offline' ? 'text-gray-500' : 'text-yellow-500'));
+        let bgBadge = renderStatus === 'ok' ? 'bg-green-500/20' : (renderStatus === 'error' ? 'bg-red-500/20' : 'bg-gray-500/20');
+
+        // Update sparkline
+        let valNum = parseFloat(s.lastReading) || 0;
+        sparklines[k].push(valNum);
+        if (sparklines[k].length > 20) sparklines[k].shift();
+        const maxV = Math.max(...sparklines[k], 1);
+        const pts = sparklines[k].map((v, i) => `${(i / 19) * 100},${40 - (v / maxV) * 40}`).join(' ');
+
+        html += `
            <div class="sensor-card ${renderStatus === 'error' ? 'error' : ''}">
              ${renderStatus === 'error' ? '<div class="absolute top-0 left-0 w-full bg-red-500 text-white text-[10px] text-center font-bold">🚨 SENSOR ERROR</div>' : ''}
              <div class="text-xs text-gray-400 font-bold mb-1 mt-2">${meta.model}</div>
@@ -606,68 +876,62 @@
                <span class="px-2 py-1 rounded font-bold uppercase ${sColor} ${bgBadge}">${renderStatus}</span>
                <span class="text-gray-500">${age}s ago</span>
              </div>
-             <svg class="sparkline"><polyline fill="none" stroke="${renderStatus==='error'?'#ff4d4d':'#3ecf7a'}" stroke-width="2" points="${pts}"/></svg>
+             <svg class="sparkline"><polyline fill="none" stroke="${renderStatus === 'error' ? '#ff4d4d' : '#3ecf7a'}" stroke-width="2" points="${pts}"/></svg>
            </div>
          `;
       });
       document.getElementById('sensors-grid').innerHTML = html;
     }
-    
+
     // Main render loop
     setInterval(() => {
       renderHealthMonitor();
     }, 1000);
 
     // Sim Controls
-    window.simError = function() {
+    window.simError = function () {
       const s = document.getElementById('sim-sensor').value;
-      safeUpdate(`stations/RFX-001/health/sensors/${s}`, { status: 'error', lastUpdate: Date.now() });
+      supabase.from('sensors').update({ status: 'error', last_update: new Date().toISOString() }).eq('station_id', STATION_ID).eq('sensor_key', s);
       window.addAlert(`Simulated error on ${s}`, 'error');
     }
-    window.simOffline = function() {
-      safeUpdate(`stations/RFX-001/health`, { lastPing: Date.now() - 60000 });
+    window.simOffline = function () {
+      STATE.health.lastPing = Date.now() - 60000;
       window.addAlert(`Simulated Station Offline (Ping delayed)`, 'error');
     }
-    window.simScoreDrop = function() {
-      safeUpdate(`stations/RFX-001/health/sensors/flowSensor`, { status: 'warning', lastUpdate: Date.now() });
-      safeUpdate(`stations/RFX-001/health/sensors/ultrasonic`, { status: 'warning', lastUpdate: Date.now() });
+    window.simScoreDrop = function () {
+      supabase.from('sensors').update({ status: 'warning', last_update: new Date().toISOString() }).in('sensor_key', ['flowSensor', 'ultrasonic']).eq('station_id', STATION_ID);
       window.addAlert(`Simulated warning scenarios`, 'warning');
     }
-    window.restoreAll = function() {
-      const updates = {};
-      updates['lastPing'] = Date.now();
-      ['ultrasonic','flowSensor','temperature','tds','qrScanner'].forEach(s => {
-         updates[`sensors/${s}/status`] = 'ok';
-         updates[`sensors/${s}/lastUpdate`] = Date.now();
-      });
-      safeUpdate(`stations/RFX-001/health`, updates);
+    window.restoreAll = function () {
+      STATE.health.lastPing = Date.now();
+      supabase.from('sensors').update({ status: 'ok', last_update: new Date().toISOString() }).in('sensor_key', ['ultrasonic', 'flowSensor', 'temperature', 'tds', 'qrScanner']).eq('station_id', STATION_ID);
       window.addAlert(`Restored all sensors to OK`, 'success');
     }
 
     function timeAgo(ts) {
       const diff = Math.max(0, Math.floor((Date.now() - ts) / 1000));
-      if(diff < 60) return diff + 's ago';
-      if(diff < 3600) return Math.floor(diff/60) + 'm ago';
-      if(diff < 86400) return Math.floor(diff/3600) + 'h ago';
-      return Math.floor(diff/86400) + 'd ago';
+      if (diff < 60) return diff + 's ago';
+      if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+      if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+      return Math.floor(diff / 86400) + 'd ago';
     }
 
     function renderRevenueChart() {
       const chart = document.getElementById('rev-chart');
-      if(!chart) return;
+      if (!chart) return;
       const svg = chart.closest('svg');
-      if(!svg.hasAttribute('viewBox')) {
+      if (!svg.hasAttribute('viewBox')) {
         svg.setAttribute('viewBox', '0 0 700 200');
         svg.setAttribute('preserveAspectRatio', 'none');
       }
 
       const days = [];
       const now = new Date();
-      for(let i=6; i>=0; i--) {
+      for (let i = 6; i >= 0; i--) {
         const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
         days.push({
           dateStr: d.toLocaleDateString(),
-          label: d.toLocaleDateString('en-US', {weekday:'short'}),
+          label: d.toLocaleDateString('en-US', { weekday: 'short' }),
           amount: 0
         });
       }
@@ -675,7 +939,7 @@
       STATE.logs.forEach(l => {
         const d = new Date(l.timestamp).toLocaleDateString();
         const day = days.find(x => x.dateStr === d);
-        if(day) {
+        if (day) {
           day.amount += parseFloat(l.amount || 0);
         }
       });
@@ -693,7 +957,7 @@
       chart.setAttribute('points', points);
 
       let labelContainer = document.getElementById('rev-chart-labels');
-      if(!labelContainer) {
+      if (!labelContainer) {
         labelContainer = document.createElement('div');
         labelContainer.id = 'rev-chart-labels';
         labelContainer.className = 'flex justify-between text-xs text-gray-500 mt-2 px-1 font-mono';
@@ -704,9 +968,9 @@
 
     function renderRecentActivity() {
       const container = document.getElementById('d-recent-activity');
-      if(!container) return;
+      if (!container) return;
       const recent = STATE.logs.slice().reverse().slice(0, 8);
-      if(recent.length === 0) {
+      if (recent.length === 0) {
         container.innerHTML = '<div class="text-sm text-gray-500 py-2">No activity yet.</div>';
         return;
       }
@@ -726,8 +990,8 @@
 
     function renderComparativeAnalytics() {
       const container = document.getElementById('comparative-stats');
-      if(!container) return;
-      
+      if (!container) return;
+
       const now = new Date();
       const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999).getTime();
       const thisWeekStart = todayEnd - 7 * 86400000 + 1;
@@ -737,11 +1001,11 @@
       let lastRev = 0, lastSess = 0, lastVol = 0;
 
       STATE.logs.forEach(l => {
-        if(l.timestamp >= thisWeekStart && l.timestamp <= todayEnd) {
+        if (l.timestamp >= thisWeekStart && l.timestamp <= todayEnd) {
           thisRev += parseFloat(l.amount || 0);
           thisSess++;
           thisVol += parseFloat(l.quantity || 0);
-        } else if(l.timestamp >= lastWeekStart && l.timestamp < thisWeekStart) {
+        } else if (l.timestamp >= lastWeekStart && l.timestamp < thisWeekStart) {
           lastRev += parseFloat(l.amount || 0);
           lastSess++;
           lastVol += parseFloat(l.quantity || 0);
@@ -754,7 +1018,7 @@
       function makeRow(label, thisVal, lastVal, prefix, suffix) {
         let diff = thisVal - lastVal;
         let pctLabel, color, arrow;
-        
+
         if (lastVal === 0) {
           if (thisVal > 0) {
             pctLabel = 'New'; color = 'text-[#3ecf7a]'; arrow = '▲';
@@ -768,7 +1032,7 @@
           else if (diff < 0) { color = 'text-red-400'; arrow = '▼'; }
           else { color = 'text-gray-500'; arrow = ''; pctLabel = '0%'; }
         }
-        
+
         return `
           <div class="flex justify-between items-center bg-[#111] p-3 rounded-lg border border-[#333]">
             <div class="text-sm font-bold text-gray-400 uppercase tracking-wide">${label}</div>
@@ -780,7 +1044,7 @@
         `;
       }
 
-      container.innerHTML = 
+      container.innerHTML =
         makeRow('Revenue', thisRev, lastRev, '₹', '') +
         makeRow('Sessions', thisSess, lastSess, '', '') +
         makeRow('Volume', thisVol, lastVol, '', 'ml');
@@ -788,27 +1052,27 @@
 
     function renderRestockPredictor() {
       const container = document.getElementById('restock-predictor-content');
-      if(!container) return;
-      
+      if (!container) return;
+
       const now = Date.now();
       const weekStart = now - 7 * 86400000;
-      
+
       const productUsage = {};
       Object.keys(PRODUCTS).forEach(k => productUsage[k] = 0);
-      
+
       STATE.logs.forEach(l => {
-        if(l.timestamp >= weekStart && productUsage[l.product] !== undefined) {
+        if (l.timestamp >= weekStart && productUsage[l.product] !== undefined) {
           productUsage[l.product] += parseFloat(l.quantity || 0);
         }
       });
-      
+
       const alerts = [];
       Object.keys(PRODUCTS).forEach(k => {
         const avgDaily = productUsage[k] / 7;
         const currentLevel = STATE.tanks[k] || 0;
-        
+
         if (avgDaily <= 0) return;
-        
+
         const daysLeft = currentLevel / avgDaily;
         if (daysLeft <= 3) {
           alerts.push({
@@ -819,17 +1083,17 @@
           });
         }
       });
-      
+
       alerts.sort((a, b) => a.daysLeft - b.daysLeft);
-      
+
       if (alerts.length === 0) {
         container.innerHTML = '<div class="text-sm text-gray-500 p-3 bg-[#111] rounded-lg border border-[#333]">All tanks sufficiently stocked.</div>';
         return;
       }
-      
+
       container.innerHTML = alerts.map(a => {
         const pct = ((a.level / TANK_MAX) * 100).toFixed(0);
-        const timeText = a.daysLeft === 0 ? 'Restock today' : `~${a.daysLeft} day${a.daysLeft>1?'s':''} left`;
+        const timeText = a.daysLeft === 0 ? 'Restock today' : `~${a.daysLeft} day${a.daysLeft > 1 ? 's' : ''} left`;
         const colorClass = a.daysLeft <= 1 ? 'text-red-400' : 'text-[#f0b429]';
         return `
           <div class="flex justify-between items-center bg-[#111] p-3 rounded-lg border border-[#333]">
@@ -847,8 +1111,8 @@
 
     function renderProductPopularity() {
       const container = document.getElementById('analytics-bars');
-      if(!container) return;
-      
+      if (!container) return;
+
       const stats = Object.keys(PRODUCTS).map(k => ({
         key: k,
         name: PRODUCTS[k].name,
@@ -856,19 +1120,19 @@
         volume: 0,
         count: 0
       }));
-      
+
       STATE.logs.forEach(l => {
         const s = stats.find(x => x.key === l.product);
-        if(s) {
+        if (s) {
           s.volume += parseFloat(l.quantity || 0);
           s.count++;
         }
       });
-      
+
       stats.sort((a, b) => b.volume - a.volume);
-      
+
       const maxVol = stats.length ? Math.max(...stats.map(s => s.volume)) : 0;
-      
+
       container.innerHTML = stats.map(s => {
         const barHeight = maxVol > 0 ? Math.max(4, (s.volume / maxVol) * 190) : 4;
         const volL = (s.volume / 1000).toFixed(1);
@@ -882,8 +1146,8 @@
           </div>
         `;
       }).join('');
-      
-      if(maxVol === 0) {
+
+      if (maxVol === 0) {
         container.style.position = 'relative';
         container.innerHTML += '<div class="absolute top-1/2 left-0 w-full text-center text-sm text-gray-500 -translate-y-1/2">No session data yet</div>';
       }
@@ -891,15 +1155,15 @@
 
     function renderInventoryAlerts() {
       const container = document.getElementById('inv-alerts');
-      if(!container) return;
-      
+      if (!container) return;
+
       const alerts = [];
       Object.keys(PRODUCTS).forEach(k => {
         const val = STATE.tanks[k] || 0;
         const status = getStockStatus(val);
         const pct = (val / TANK_MAX) * 100;
-        
-        if(status !== 'ok') {
+
+        if (status !== 'ok') {
           alerts.push({
             key: k,
             name: PRODUCTS[k].name,
@@ -910,26 +1174,26 @@
           });
         }
       });
-      
-      if(alerts.length === 0) {
+
+      if (alerts.length === 0) {
         container.className = "text-[#3ecf7a] font-bold";
         container.innerHTML = "All systems nominal.";
         return;
       }
-      
+
       alerts.sort((a, b) => a.pct - b.pct);
-      
+
       container.className = "flex flex-col gap-2";
       container.innerHTML = alerts.map(a => {
         const isPending = hasPendingOrder(a.key);
         const icon = a.critical ? '🔴' : '⚠️';
         const color = a.critical ? 'text-red-400' : 'text-yellow-400';
         let sevText = a.critical ? 'OUT OF STOCK' : 'running low';
-        
+
         if (a.critical && isPending) {
-           sevText += ' — auto-order placed';
+          sevText += ' — auto-order placed';
         }
-        
+
         return `
           <div class="flex items-center gap-2 bg-[#111] p-3 rounded-lg border border-[#333] ${color}">
             <span>${icon}</span>
@@ -943,15 +1207,15 @@
     // Existing Logic Adapted
     function refreshData() {
       const { logs, tanks, orders, prices } = STATE;
-      
+
       let totalRev = 0, totalVol = 0, totalTime = 0;
       logs.forEach(l => { totalRev += parseFloat(l.amount || 0); totalVol += (l.quantity || 0); totalTime += parseInt(l.duration || 0); });
-      
+
       document.getElementById('d-rev').innerText = `₹${totalRev.toFixed(0)}`;
       document.getElementById('d-sessions').innerText = logs.length;
       document.getElementById('d-plastic').innerText = Math.floor(totalVol / 500);
       document.getElementById('d-avg-time').innerText = logs.length ? `${Math.floor(totalTime / logs.length)}s` : '0s';
-      
+
       let invHtml = '';
       Object.keys(PRODUCTS).forEach(k => {
         const val = tanks[k] || 0;
@@ -966,7 +1230,7 @@
             </div>
             <div class="mt-4 font-mono text-xl font-bold text-white">${val.toFixed(0)}ml</div>
             <div class="text-xs text-gray-500 mb-4">${pct.toFixed(1)}%</div>
-            <button class="btn btn-outline text-xs px-3 py-2 w-full mt-auto" onclick="quickAddLitres('${k}', 1)">+ 1 Litre</button>
+            <button class="btn btn-outline text-xs px-3 py-2 w-full mt-auto" onclick="quickDispenseLitres('${k}', 1)">1L Dispense</button>
             ${status !== 'ok' ? `<button class="btn ${status === 'out' ? 'btn-red' : 'btn-outline'} text-xs px-3 py-2 w-full mt-2" onclick="manualOrderNow('${k}')">${status === 'out' ? 'Order Now (Out of Stock)' : 'Order Now (Low)'}</button>` : ''}
           </div>
         `;
@@ -995,7 +1259,7 @@
         </tr>
       `).join('');
       document.getElementById('al-table-body').innerHTML = logHtml || '<tr><td colspan="6" class="text-center text-gray-500">No sessions recorded yet.</td></tr>';
-      
+
       let priceHtml = '';
       Object.keys(PRODUCTS).forEach(k => {
         const p = prices[k] || PRODUCTS[k].defPrice;
@@ -1014,44 +1278,73 @@
       renderRestockPredictor();
       renderProductPopularity();
       renderInventoryAlerts();
-      
+
       checkStockAndAutoOrder();
     }
 
-    window.quickAddLitres = function(p, l) {
-       const v = STATE.tanks[p] || 0;
-       safeUpdate(`stations/RFX-001/tanks`, { [p]: Math.min(TANK_MAX, v + l*1000) });
-       safePush('restockHistory', { product: p, amountAdded: l*1000, operator: 'Admin', timestamp: Date.now(), newLevel: Math.min(TANK_MAX, v + l*1000) });
+    window.quickDispenseLitres = async function (p, l) {
+      const v = STATE.tanks[p] || 0;
+      const amount = l * 1000;
+      if (v < amount) { alert('Not enough liquid'); return; }
+      const newLevel = v - amount;
+      
+      const price = STATE.prices[p] || PRODUCTS[p].defPrice;
+      const revenue = (amount / 100) * price;
+      
+      await supabase.from('sessions').insert({
+        station_id: 'RFX-001',
+        product_name: p,
+        qty: amount,
+        amt: revenue,
+        status: 'completed'
+      });
+      
+      await supabase.from('tanks').update({ level: newLevel }).eq('station_id', 'RFX-001').eq('liquid', p);
     }
 
-    window.placeSupplierOrder = function() {
+    window.placeSupplierOrder = async function () {
       const p = document.getElementById('so-product').value;
       const q = parseFloat(document.getElementById('so-qty').value);
-      if(!Number.isFinite(q) || q <= 0) { alert('Enter a valid quantity greater than 0'); return; }
-      if(q > 10000) { alert('Quantity exceeds maximum allowed order (10,000 L). Please check the amount.'); return; }
-      safePush('orders', { product: p, quantity: q, supplier: 'AquaPure Supplies', status: 'pending', orderDate: Date.now() });
+      if (!Number.isFinite(q) || q <= 0) { alert('Enter a valid quantity greater than 0'); return; }
+      if (q > 10000) { alert('Quantity exceeds maximum allowed order (10,000 L). Please check the amount.'); return; }
+      await supabase.from('orders').insert({
+        station_id: 'RFX-001',
+        liquid: p,
+        quantity: q,
+        trigger_type: 'manual',
+        status: 'pending'
+      });
       document.getElementById('so-qty').value = '';
     }
 
-    window.markOrderDelivered = function(id) {
-      safeUpdate(`orders/${id}`, { status: 'delivered', deliveryDate: Date.now() });
+    window.markOrderDelivered = async function (id) {
+      await supabase.from('orders').update({ status: 'delivered' }).eq('id', id);
     }
 
-    window.savePrices = function() {
-      const p = {};
-      Object.keys(PRODUCTS).forEach(k => { p[k] = parseFloat(document.getElementById('price-'+k).value); });
-      safeSet('settings/prices', p);
+    window.savePrices = async function () {
+      const updates = [];
+      Object.keys(PRODUCTS).forEach(k => {
+        updates.push({ liquid: k, price: parseFloat(document.getElementById('price-' + k).value) });
+      });
+      await supabase.from('prices').upsert(updates);
       alert("Prices saved globally.");
     }
 
-    window.factoryReset = function() {
-      if(confirm("Are you SURE you want to wipe all Cloud data?")) {
-        safeSet('logs/sessions', null); // clear old paths
-        safeSet('sessions', null);      // clear new path
-        safeSet('orders', null);
-        safeSet('stations/RFX-001/tanks', { water: TANK_MAX, shampoo: TANK_MAX, detergent: TANK_MAX, handwash: TANK_MAX, oil: TANK_MAX });
+    window.factoryReset = async function () {
+      if (confirm("Are you SURE you want to wipe all Cloud data?")) {
+        await supabase.from('sessions').delete().eq('station_id', 'RFX-001');
+        await supabase.from('orders').delete().eq('station_id', 'RFX-001');
+        
+        const { data: tanksData } = await supabase.from('tanks').select('liquid, tank_max').eq('station_id', 'RFX-001');
+        if (tanksData) {
+          for (let t of tanksData) {
+            await supabase.from('tanks').update({ level: t.tank_max }).eq('station_id', 'RFX-001').eq('liquid', t.liquid);
+          }
+        }
+        alert("Factory reset complete.");
       }
     }
   </script>
 </body>
+
 </html>
