@@ -63,12 +63,12 @@
   <div class="sidebar mt-6">
     <div class="text-3xl font-black text-[#3ecf7a] mb-10 tracking-tight">RefillX<span class="text-white">Admin</span></div>
     
-    <div class="nav-item active" onclick="switchPage('dashboard')">📊 Dashboard</div>
-    <div class="nav-item relative" onclick="switchPage('health')">🔴 Health Monitor <span id="alert-badge" class="hidden absolute top-2 right-2 bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full">0</span></div>
-    <div class="nav-item" onclick="switchPage('inventory')">💧 Inventory</div>
-    <div class="nav-item" onclick="switchPage('orders')">📦 Supplier Orders</div>
-    <div class="nav-item" onclick="switchPage('analytics')">📈 Analytics</div>
-    <div class="nav-item mt-auto" onclick="switchPage('settings')">⚙️ Settings</div>
+    <div class="nav-item active" data-page="dashboard" onclick="switchPage('dashboard', event)">📊 Dashboard</div>
+    <div class="nav-item relative" data-page="health" onclick="switchPage('health', event)">🔴 Health Monitor <span id="alert-badge" class="hidden absolute top-2 right-2 bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full">0</span></div>
+    <div class="nav-item" data-page="inventory" onclick="switchPage('inventory', event)">💧 Inventory</div>
+    <div class="nav-item" data-page="orders" onclick="switchPage('orders', event)">📦 Supplier Orders</div>
+    <div class="nav-item" data-page="analytics" onclick="switchPage('analytics', event)">📈 Analytics</div>
+    <div class="nav-item mt-auto" data-page="settings" onclick="switchPage('settings', event)">⚙️ Settings</div>
   </div>
 
   <!-- Main Content -->
@@ -360,8 +360,28 @@
       }
     }, 1500);
 
+    const DEFAULT_SENSORS = {
+      ultrasonic:  { status: 'ok', lastReading: '12.4 cm', lastUpdate: Date.now() },
+      flowSensor:  { status: 'ok', lastReading: '0 L/min',  lastUpdate: Date.now() },
+      temperature: { status: 'ok', lastReading: '24.5 °C',  lastUpdate: Date.now() },
+      tds:         { status: 'ok', lastReading: '180 ppm',  lastUpdate: Date.now() },
+      qrScanner:   { status: 'ok', lastReading: 'Ready',    lastUpdate: Date.now() }
+    };
+
+    function seedSensorsIfEmpty(healthObj) {
+      if (!healthObj.sensors || Object.keys(healthObj.sensors).length === 0) {
+        healthObj.sensors = DEFAULT_SENSORS;
+        safeUpdate('stations/RFX-001/health/sensors', DEFAULT_SENSORS);
+      }
+      return healthObj;
+    }
+
+    const DEFAULT_HEALTH_WITH_SENSORS = seedSensorsIfEmpty({ ...STATE.health });
+
     safeOnValue('stations/RFX-001/tanks', (val) => { if(val) STATE.tanks = val; refreshData(); }, STATE.tanks);
-    safeOnValue('stations/RFX-001/health', (val) => { if(val) STATE.health = val; }, STATE.health);
+    safeOnValue('stations/RFX-001/health', (val) => {
+      if(val) STATE.health = seedSensorsIfEmpty(val);
+    }, DEFAULT_HEALTH_WITH_SENSORS);
     safeOnValue('settings/prices', (val) => { if(val) STATE.prices = val; refreshData(); }, {});
     safeOnValue('sessions', (val) => {
       if(val) STATE.logs = Object.values(val).sort((a,b) => a.timestamp - b.timestamp);
@@ -373,11 +393,17 @@
     }, []);
 
     // Tab Switching
-    window.switchPage = function(pageId) {
+    window.switchPage = function(pageId, evt) {
       document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
       document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
       document.getElementById('page-' + pageId).classList.add('active');
-      event.currentTarget.classList.add('active');
+      // Use the passed event if available, otherwise find the nav-item by data-page attribute
+      if(evt && evt.currentTarget) {
+        evt.currentTarget.classList.add('active');
+      } else {
+        const navItem = document.querySelector(`.nav-item[data-page="${pageId}"]`);
+        if(navItem) navItem.classList.add('active');
+      }
       document.getElementById('page-title').innerText = pageId.charAt(0).toUpperCase() + pageId.slice(1);
       
       // Clear alert badge if opening health
@@ -930,8 +956,9 @@
 
     window.placeSupplierOrder = function() {
       const p = document.getElementById('so-product').value;
-      const q = document.getElementById('so-qty').value;
-      if(!q) return alert('Enter quantity');
+      const q = parseFloat(document.getElementById('so-qty').value);
+      if(!Number.isFinite(q) || q <= 0) { alert('Enter a valid quantity greater than 0'); return; }
+      if(q > 10000) { alert('Quantity exceeds maximum allowed order (10,000 L). Please check the amount.'); return; }
       safePush('orders', { product: p, quantity: q, supplier: 'AquaPure Supplies', status: 'pending', orderDate: Date.now() });
       document.getElementById('so-qty').value = '';
     }
@@ -952,7 +979,7 @@
         safeSet('logs/sessions', null); // clear old paths
         safeSet('sessions', null);      // clear new path
         safeSet('orders', null);
-        safeSet('stations/RFX-001/tanks', { water: 10000, shampoo: 5000, detergent: 5000, handwash: 5000, oil: 5000 });
+        safeSet('stations/RFX-001/tanks', { water: TANK_MAX, shampoo: TANK_MAX, detergent: TANK_MAX, handwash: TANK_MAX, oil: TANK_MAX });
       }
     }
   </script>
