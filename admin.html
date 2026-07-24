@@ -762,6 +762,92 @@
       }).join('');
     }
 
+    function renderProductPopularity() {
+      const container = document.getElementById('analytics-bars');
+      if(!container) return;
+      
+      const stats = Object.keys(PRODUCTS).map(k => ({
+        key: k,
+        name: PRODUCTS[k].name,
+        color: PRODUCTS[k].color,
+        volume: 0,
+        count: 0
+      }));
+      
+      STATE.logs.forEach(l => {
+        const s = stats.find(x => x.key === l.product);
+        if(s) {
+          s.volume += parseFloat(l.quantity || 0);
+          s.count++;
+        }
+      });
+      
+      stats.sort((a, b) => b.volume - a.volume);
+      
+      const maxVol = stats.length ? Math.max(...stats.map(s => s.volume)) : 0;
+      
+      container.innerHTML = stats.map(s => {
+        const barHeight = maxVol > 0 ? Math.max(4, (s.volume / maxVol) * 190) : 4;
+        const volL = (s.volume / 1000).toFixed(1);
+        return `
+          <div class="flex-1 flex flex-col items-center justify-end h-full relative">
+            <div class="w-full rounded-t-lg transition-all duration-500" style="background: ${s.color}; height: ${barHeight}px;"></div>
+            <div class="mt-2 text-center w-full">
+              <div class="text-xs font-bold text-gray-300 truncate px-1" title="${s.name}">${s.name}</div>
+              <div class="text-[10px] text-gray-500 font-mono">${volL}L (${s.count})</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+      
+      if(maxVol === 0) {
+        container.style.position = 'relative';
+        container.innerHTML += '<div class="absolute top-1/2 left-0 w-full text-center text-sm text-gray-500 -translate-y-1/2">No session data yet</div>';
+      }
+    }
+
+    function renderInventoryAlerts() {
+      const container = document.getElementById('inv-alerts');
+      if(!container) return;
+      
+      const alerts = [];
+      Object.keys(PRODUCTS).forEach(k => {
+        const val = STATE.tanks[k] || 0;
+        const pct = (val / TANK_MAX) * 100;
+        if(pct < 25) {
+          alerts.push({
+            key: k,
+            name: PRODUCTS[k].name,
+            val,
+            pct,
+            critical: pct < 10
+          });
+        }
+      });
+      
+      if(alerts.length === 0) {
+        container.className = "text-[#3ecf7a] font-bold";
+        container.innerHTML = "All systems nominal.";
+        return;
+      }
+      
+      alerts.sort((a, b) => a.pct - b.pct);
+      
+      container.className = "flex flex-col gap-2";
+      container.innerHTML = alerts.map(a => {
+        const icon = a.critical ? '🔴' : '⚠️';
+        const color = a.critical ? 'text-red-400' : 'text-yellow-400';
+        const sev = a.critical ? 'critically low' : 'running low';
+        return `
+          <div class="flex items-center gap-2 bg-[#111] p-3 rounded-lg border border-[#333] ${color}">
+            <span>${icon}</span>
+            <span class="font-bold">${a.name} ${sev} &mdash; ${a.pct.toFixed(0)}% remaining</span>
+            <span class="text-xs text-gray-500 font-mono ml-auto">(${a.val.toFixed(0)}ml of ${TANK_MAX}ml)</span>
+          </div>
+        `;
+      }).join('');
+    }
+
     // Existing Logic Adapted
     function refreshData() {
       const { logs, tanks, orders, prices } = STATE;
@@ -832,6 +918,8 @@
       renderRecentActivity();
       renderComparativeAnalytics();
       renderRestockPredictor();
+      renderProductPopularity();
+      renderInventoryAlerts();
     }
 
     window.quickAddLitres = function(p, l) {
