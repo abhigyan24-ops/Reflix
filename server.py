@@ -7,12 +7,19 @@ import threading
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from urllib.parse import urlparse, parse_qs
+from dotenv import load_dotenv
+
+# Load environment variables from .env file (never commit .env to git)
+load_dotenv()
 
 # ==========================================
-# 📧 EMAIL CONFIGURATION
+# 📧 EMAIL CONFIGURATION (loaded from .env)
 # ==========================================
-SENDER_EMAIL = "s.24.gyani@gmail.com"
-SENDER_PASSWORD = "axoc jmka ugni kaoh"
+SENDER_EMAIL    = os.getenv('SENDER_EMAIL', '')
+SENDER_PASSWORD = os.getenv('SENDER_PASSWORD', '')
+
+if not SENDER_EMAIL or not SENDER_PASSWORD:
+    print("WARNING: SENDER_EMAIL or SENDER_PASSWORD not set in .env — email sending will fail.")
 # ==========================================
 
 PORT = 8080
