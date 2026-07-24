@@ -63,12 +63,12 @@
   <div class="sidebar mt-6">
     <div class="text-3xl font-black text-[#3ecf7a] mb-10 tracking-tight">RefillX<span class="text-white">Admin</span></div>
     
-    <div class="nav-item active" data-page="dashboard" onclick="switchPage('dashboard', event)">📊 Dashboard</div>
-    <div class="nav-item relative" data-page="health" onclick="switchPage('health', event)">🔴 Health Monitor <span id="alert-badge" class="hidden absolute top-2 right-2 bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full">0</span></div>
-    <div class="nav-item" data-page="inventory" onclick="switchPage('inventory', event)">💧 Inventory</div>
-    <div class="nav-item" data-page="orders" onclick="switchPage('orders', event)">📦 Supplier Orders</div>
-    <div class="nav-item" data-page="analytics" onclick="switchPage('analytics', event)">📈 Analytics</div>
-    <div class="nav-item mt-auto" data-page="settings" onclick="switchPage('settings', event)">⚙️ Settings</div>
+    <div class="nav-item active" data-page="dashboard" onclick="switchPage('dashboard')">📊 Dashboard</div>
+    <div class="nav-item relative" data-page="health" onclick="switchPage('health')">🔴 Health Monitor <span id="alert-badge" class="hidden absolute top-2 right-2 bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full">0</span></div>
+    <div class="nav-item" data-page="inventory" onclick="switchPage('inventory')">💧 Inventory</div>
+    <div class="nav-item" data-page="orders" onclick="switchPage('orders')">📦 Supplier Orders</div>
+    <div class="nav-item" data-page="analytics" onclick="switchPage('analytics')">📈 Analytics</div>
+    <div class="nav-item mt-auto" data-page="settings" onclick="switchPage('settings')">⚙️ Settings</div>
   </div>
 
   <!-- Main Content -->
@@ -263,6 +263,62 @@
     };
     const TANK_MAX = 5000;
 
+    const STOCK_THRESHOLDS = { outOfStock: 5, low: 20 }; // percentage of TANK_MAX
+    function getStockStatus(level) {
+      const pct = (level / TANK_MAX) * 100;
+      if (pct <= STOCK_THRESHOLDS.outOfStock) return 'out';
+      if (pct <= STOCK_THRESHOLDS.low) return 'low';
+      return 'ok';
+    }
+
+    function hasPendingOrder(productKey) {
+      return STATE.orders.some(o => o.product === productKey && o.status === 'pending');
+    }
+
+    const REORDER_QTY_LITERS = 5;
+    let recentlyAutoOrdered = new Set();
+
+    function checkStockAndAutoOrder() {
+      Object.keys(PRODUCTS).forEach(k => {
+        const level = STATE.tanks[k] || 0;
+        const status = getStockStatus(level);
+        if (status === 'out' && !hasPendingOrder(k)) {
+          if (recentlyAutoOrdered.has(k)) return;
+          recentlyAutoOrdered.add(k);
+          setTimeout(() => recentlyAutoOrdered.delete(k), 5000);
+          
+          safePush('orders', {
+            product: k,
+            quantity: REORDER_QTY_LITERS,
+            supplier: 'AquaPure Supplies',
+            status: 'pending',
+            orderDate: Date.now(),
+            source: 'auto'
+          });
+          window.addAlert(`${PRODUCTS[k].name} is out of stock — auto-order placed for ${REORDER_QTY_LITERS}L`, 'error');
+        }
+      });
+    }
+
+    window.manualOrderNow = function(productKey) {
+      if (hasPendingOrder(productKey)) {
+        alert(`${PRODUCTS[productKey].name} already has a pending order.`);
+        return;
+      }
+      const qty = prompt(`Quantity to order for ${PRODUCTS[productKey].name} (liters):`, REORDER_QTY_LITERS);
+      const q = parseFloat(qty);
+      if (!Number.isFinite(q) || q <= 0) return; // user cancelled or entered garbage — silently abort
+      safePush('orders', {
+        product: productKey,
+        quantity: q,
+        supplier: 'AquaPure Supplies',
+        status: 'pending',
+        orderDate: Date.now(),
+        source: 'manual'
+      });
+      window.addAlert(`Manual order placed for ${PRODUCTS[productKey].name}: ${q}L`, 'success');
+    }
+
     // === LOCAL CLOUD CLIENT (Replacing Firebase) ===
     const CLOUD_URL = window.location.origin;
     
@@ -393,23 +449,24 @@
     }, []);
 
     // Tab Switching
-    window.switchPage = function(pageId, evt) {
+    window.switchPage = function(pageId) {
       document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
       document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-      document.getElementById('page-' + pageId).classList.add('active');
-      // Use the passed event if available, otherwise find the nav-item by data-page attribute
-      if(evt && evt.currentTarget) {
-        evt.currentTarget.classList.add('active');
-      } else {
-        const navItem = document.querySelector(`.nav-item[data-page="${pageId}"]`);
-        if(navItem) navItem.classList.add('active');
-      }
-      document.getElementById('page-title').innerText = pageId.charAt(0).toUpperCase() + pageId.slice(1);
+      
+      const targetPage = document.getElementById('page-' + pageId);
+      if(targetPage) targetPage.classList.add('active');
+      
+      const navItem = document.querySelector(`.nav-item[data-page="${pageId}"]`);
+      if(navItem) navItem.classList.add('active');
+      
+      const title = document.getElementById('page-title');
+      if(title) title.innerText = pageId.charAt(0).toUpperCase() + pageId.slice(1);
       
       // Clear alert badge if opening health
       if(pageId === 'health') {
         STATE.unreadAlerts = 0;
-        document.getElementById('alert-badge').classList.add('hidden');
+        const alertBadge = document.getElementById('alert-badge');
+        if(alertBadge) alertBadge.classList.add('hidden');
       }
     }
 
@@ -839,14 +896,17 @@
       const alerts = [];
       Object.keys(PRODUCTS).forEach(k => {
         const val = STATE.tanks[k] || 0;
+        const status = getStockStatus(val);
         const pct = (val / TANK_MAX) * 100;
-        if(pct < 25) {
+        
+        if(status !== 'ok') {
           alerts.push({
             key: k,
             name: PRODUCTS[k].name,
             val,
             pct,
-            critical: pct < 10
+            status,
+            critical: status === 'out'
           });
         }
       });
@@ -861,13 +921,19 @@
       
       container.className = "flex flex-col gap-2";
       container.innerHTML = alerts.map(a => {
+        const isPending = hasPendingOrder(a.key);
         const icon = a.critical ? '🔴' : '⚠️';
         const color = a.critical ? 'text-red-400' : 'text-yellow-400';
-        const sev = a.critical ? 'critically low' : 'running low';
+        let sevText = a.critical ? 'OUT OF STOCK' : 'running low';
+        
+        if (a.critical && isPending) {
+           sevText += ' — auto-order placed';
+        }
+        
         return `
           <div class="flex items-center gap-2 bg-[#111] p-3 rounded-lg border border-[#333] ${color}">
             <span>${icon}</span>
-            <span class="font-bold">${a.name} ${sev} &mdash; ${a.pct.toFixed(0)}% remaining</span>
+            <span class="font-bold">${a.name}: ${sevText} &mdash; ${a.pct.toFixed(0)}% remaining</span>
             <span class="text-xs text-gray-500 font-mono ml-auto">(${a.val.toFixed(0)}ml of ${TANK_MAX}ml)</span>
           </div>
         `;
@@ -890,6 +956,7 @@
       Object.keys(PRODUCTS).forEach(k => {
         const val = tanks[k] || 0;
         const pct = (val / TANK_MAX) * 100;
+        const status = getStockStatus(val);
         const col = pct < 20 ? '#ff4d4d' : PRODUCTS[k].color;
         invHtml += `
           <div class="card flex flex-col items-center">
@@ -900,6 +967,7 @@
             <div class="mt-4 font-mono text-xl font-bold text-white">${val.toFixed(0)}ml</div>
             <div class="text-xs text-gray-500 mb-4">${pct.toFixed(1)}%</div>
             <button class="btn btn-outline text-xs px-3 py-2 w-full mt-auto" onclick="quickAddLitres('${k}', 1)">+ 1 Litre</button>
+            ${status !== 'ok' ? `<button class="btn ${status === 'out' ? 'btn-red' : 'btn-outline'} text-xs px-3 py-2 w-full mt-2" onclick="manualOrderNow('${k}')">${status === 'out' ? 'Order Now (Out of Stock)' : 'Order Now (Low)'}</button>` : ''}
           </div>
         `;
       });
@@ -908,7 +976,7 @@
       const orderHtml = orders.map((o) => `
         <tr>
           <td class="font-mono text-gray-400">#ORD-${o.dbKey.slice(-4)}</td>
-          <td>${PRODUCTS[o.product] ? PRODUCTS[o.product].name : o.product}</td>
+          <td>${PRODUCTS[o.product] ? PRODUCTS[o.product].name : o.product} ${o.source === 'auto' ? '<span class="text-[10px] bg-red-900/40 text-red-300 px-2 py-0.5 rounded ml-2">AUTO</span>' : ''}</td>
           <td>${o.quantity}L</td>
           <td><span class="px-2 py-1 rounded text-xs font-bold ${o.status === 'pending' ? 'bg-[#f0b429] text-black' : 'bg-[#3ecf7a] text-black'}">${o.status}</span></td>
           <td>${o.status === 'pending' ? `<button class="text-xs bg-[#222] px-3 py-1 rounded hover:bg-[#333]" onclick="markOrderDelivered('${o.dbKey}')">Mark Delivered</button>` : '-'}</td>
@@ -946,6 +1014,8 @@
       renderRestockPredictor();
       renderProductPopularity();
       renderInventoryAlerts();
+      
+      checkStockAndAutoOrder();
     }
 
     window.quickAddLitres = function(p, l) {

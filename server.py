@@ -31,8 +31,14 @@ db_lock = threading.Lock()
 DB_STATE = {
     'stations': {
         'RFX-001': {
-            'tanks': { 'water': 10000, 'shampoo': 5000, 'detergent': 5000, 'handwash': 5000, 'oil': 5000 },
-            'health': { 'lastPing': 0, 'sensors': {} },
+            'tanks': { 'water': 5000, 'shampoo': 5000, 'detergent': 5000, 'handwash': 5000, 'oil': 5000 },
+            'health': { 'lastPing': 0, 'sensors': {
+                'ultrasonic':  { 'status': 'ok', 'lastReading': '12.4 cm', 'lastUpdate': 0 },
+                'flowSensor':  { 'status': 'ok', 'lastReading': '0 L/min', 'lastUpdate': 0 },
+                'temperature': { 'status': 'ok', 'lastReading': '24.5 °C', 'lastUpdate': 0 },
+                'tds':         { 'status': 'ok', 'lastReading': '180 ppm', 'lastUpdate': 0 },
+                'qrScanner':   { 'status': 'ok', 'lastReading': 'Ready', 'lastUpdate': 0 }
+            } },
             'dispense': { 'status': 'idle', 'progress': 0 }
         }
     },
